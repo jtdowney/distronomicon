@@ -1,0 +1,10 @@
+---
+source: tests/cli_help.rs
+expression: stdout
+---
+Show currently installed version
+
+Usage: distronomicon --repo <REPO> --app <APP> --pattern <PATTERN> --state-directory <STATE_DIRECTORY> version
+
+Options:
+  -h, --help  Print help
