@@ -28,6 +28,7 @@ zip = { version = "6", features = ["deflate"] }
 [dev-dependencies]
 assert_cmd = "2"
 assert_fs = "1"
+assert_matches = "1"
 camino-tempfile-ext = "0.3"
 insta = "1"
 wiremock = "0.6"

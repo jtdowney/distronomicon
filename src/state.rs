@@ -80,6 +80,7 @@ pub fn save_atomic<P: AsRef<Utf8Path>>(path: P, state: &State) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use assert_matches::assert_matches;
     use camino_tempfile::tempdir;
     use camino_tempfile_ext::prelude::*;
 
@@ -111,5 +112,40 @@ mod tests {
         let loaded = load(&state_path).unwrap().expect("state should exist");
 
         assert_eq!(loaded, original);
+    }
+
+    #[test]
+    fn test_load_invalid_json_syntax() {
+        let temp_dir = tempdir().unwrap();
+        let state_path = temp_dir.child("state.json");
+
+        state_path.write_str("{ invalid json syntax ").unwrap();
+
+        let result = load(&state_path);
+        assert_matches!(result, Err(StateError::Serialization(_)));
+    }
+
+    #[test]
+    fn test_load_wrong_structure() {
+        let temp_dir = tempdir().unwrap();
+        let state_path = temp_dir.child("state.json");
+
+        state_path.write_str(r#"{"wrong": "structure"}"#).unwrap();
+
+        let result = load(&state_path);
+        assert_matches!(result, Err(StateError::Serialization(_)));
+    }
+
+    #[test]
+    fn test_save_atomic_no_parent_directory() {
+        let state = State {
+            latest_tag: "v1.0.0".to_string(),
+            etag: "xyz789".to_string(),
+            last_modified: jiff::Timestamp::from_second(1_000_000_000).unwrap(),
+            installed_at: jiff::Timestamp::from_second(1_000_000_010).unwrap(),
+        };
+
+        let result = save_atomic("/", &state);
+        assert_matches!(result, Err(StateError::Io(_)));
     }
 }
