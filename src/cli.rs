@@ -143,7 +143,7 @@ mod tests {
             "check",
         ]);
 
-        assert!(args.is_ok(),);
+        assert!(args.is_ok());
         let args = args.unwrap();
 
         assert_eq!(args.github_host, "api.github.com");
