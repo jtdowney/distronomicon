@@ -1,0 +1,5 @@
+---
+source: tests/cli_check.rs
+expression: stdout
+---
+up-to-date: v1.0.0

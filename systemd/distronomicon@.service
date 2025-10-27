@@ -1,0 +1,37 @@
+[Unit]
+Description=Update %i via distronomicon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/distronomicon/%i.conf
+ExecStart=/usr/local/bin/distronomicon \
+  --app %i \
+  ${INSTALL_ROOT:+--install-root ${INSTALL_ROOT}} \
+  update \
+  --repo ${REPO} \
+  --pattern ${PATTERN} \
+  ${CHECKSUM_PATTERN:+--checksum-pattern ${CHECKSUM_PATTERN}} \
+  --state-directory ${STATE_DIRECTORY:-/var/lib/distronomicon} \
+  ${RESTART_COMMAND:+--restart-command ${RESTART_COMMAND}} \
+  ${RETAIN:+--retain ${RETAIN}} \
+  ${GITHUB_HOST:+--github-host ${GITHUB_HOST}} \
+  ${ALLOW_PRERELEASE:+--allow-prerelease}
+
+# GitHub token can be set in environment file
+Environment="GITHUB_TOKEN="
+
+# Restart on failure with backoff
+Restart=on-failure
+RestartSec=5m
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt /var/lib/distronomicon
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

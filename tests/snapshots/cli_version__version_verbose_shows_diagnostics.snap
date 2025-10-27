@@ -1,0 +1,12 @@
+---
+source: tests/cli_version.rs
+expression: normalized
+---
+Diagnostic information:
+  Bin directory: /tmp/test/myapp/bin
+  Releases directory: /tmp/test/myapp/releases
+
+  Symlinks in bin directory:
+    myapp -> ../releases/v1.2.3/myapp
+
+Current version: v1.2.3
