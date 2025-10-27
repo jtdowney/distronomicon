@@ -11,6 +11,7 @@ camino = "1"
 camino-tempfile = "1"
 clap = { version = "4", features = ["derive", "env"] }
 flate2 = "1"
+jiff = { version = "0.2", features = ["serde"] }
 regex = "1"
 reqwest = { version = "0.12", features = ["rustls-tls", "json", "stream"] }
 reqwest-retry = "0.7"
@@ -27,5 +28,6 @@ zip = { version = "6", features = ["deflate"] }
 [dev-dependencies]
 assert_cmd = "2"
 assert_fs = "1"
+camino-tempfile-ext = "0.3"
 insta = "1"
 wiremock = "0.6"
