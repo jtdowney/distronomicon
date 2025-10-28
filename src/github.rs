@@ -8,6 +8,8 @@ pub struct Release {
     pub assets: Vec<Asset>,
     pub prerelease: bool,
     #[serde(default)]
+    pub draft: bool,
+    #[serde(default)]
     pub created_at: Option<Timestamp>,
 }
 
@@ -96,6 +98,7 @@ pub async fn fetch_latest(
             tag_name: String::new(),
             assets: Vec::new(),
             prerelease: false,
+            draft: false,
             created_at: None,
         };
         return Ok((empty_release, validators_out, WasModified::No));
@@ -103,6 +106,7 @@ pub async fn fetch_latest(
 
     let release = if allow_prerelease {
         let mut releases = response.json::<Vec<Release>>().await?;
+        releases.retain(|r| !r.draft);
         releases.sort_by(|a, b| b.created_at.cmp(&a.created_at));
         releases
             .into_iter()
@@ -341,5 +345,66 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_fetch_latest_skips_draft_releases() {
+        let mock_server = MockServer::start().await;
+
+        let releases_json = serde_json::json!([
+            {
+                "tag_name": "v0.3.0",
+                "prerelease": false,
+                "draft": true,
+                "created_at": "2025-10-28T12:00:00Z",
+                "assets": [
+                    {
+                        "name": "app-draft.tar.gz",
+                        "browser_download_url": "https://github.com/owner/repo/releases/download/v0.3.0/app-draft.tar.gz",
+                        "size": 3072
+                    }
+                ]
+            },
+            {
+                "tag_name": "v0.2.0",
+                "prerelease": false,
+                "draft": false,
+                "created_at": "2025-10-27T12:00:00Z",
+                "assets": [
+                    {
+                        "name": "app-stable.tar.gz",
+                        "browser_download_url": "https://github.com/owner/repo/releases/download/v0.2.0/app-stable.tar.gz",
+                        "size": 2048
+                    }
+                ]
+            }
+        ]);
+
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/releases"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(&releases_json)
+                    .insert_header("etag", "\"draft789\""),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let validators = Validators::default();
+        let result = fetch_latest(
+            "owner/repo",
+            None,
+            Some(&mock_server.uri()),
+            true,
+            &validators,
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let (release, _, _) = result.unwrap();
+
+        assert_eq!(release.tag_name, "v0.2.0");
+        assert!(!release.draft);
+        assert_eq!(release.assets[0].name, "app-stable.tar.gz");
     }
 }
