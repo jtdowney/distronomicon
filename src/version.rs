@@ -38,35 +38,32 @@ pub fn current_tag<P: AsRef<Utf8Path>>(prefix: P, app: &str) -> Result<Option<St
     }
 
     let mut symlinks = fs::read_dir(&bin_dir)?
-        .map(
-            |entry| -> io::Result<Option<(std::ffi::OsString, String)>> {
-                let entry = entry?;
-                let path = entry.path();
+        .map(|entry| {
+            let entry = entry?;
+            let path = entry.path();
 
-                let metadata = fs::symlink_metadata(&path)?;
-                if !metadata.is_symlink() {
-                    return Ok(None);
-                }
+            let metadata = fs::symlink_metadata(&path)?;
+            if !metadata.is_symlink() {
+                return Ok(None);
+            }
 
-                let target = fs::read_link(&path)?;
-                let target_utf8 = Utf8PathBuf::from_path_buf(target.clone())
-                    .unwrap_or_else(|p| Utf8PathBuf::from(p.to_string_lossy().as_ref()));
+            let target = fs::read_link(&path)?;
+            let target_utf8 = Utf8PathBuf::from_path_buf(target.clone())
+                .unwrap_or_else(|p| Utf8PathBuf::from(p.to_string_lossy().as_ref()));
 
-                let target_path = if target_utf8.is_relative() {
-                    bin_dir.join(target_utf8)
-                } else {
-                    target_utf8
-                };
+            let target_path = if target_utf8.is_relative() {
+                bin_dir.join(target_utf8)
+            } else {
+                target_utf8
+            };
 
-                let tag = match extract_tag_from_path(&target_path) {
-                    Some(t) => t,
-                    None => return Ok(None),
-                };
+            let Some(tag) = extract_tag_from_path(&target_path) else {
+                return Ok(None);
+            };
 
-                let file_name = entry.file_name();
-                Ok(Some((file_name, tag)))
-            },
-        )
+            let file_name = entry.file_name();
+            Ok(Some((file_name, tag)))
+        })
         .collect::<io::Result<Vec<Option<_>>>>()?
         .into_iter()
         .flatten()
