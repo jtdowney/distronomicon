@@ -7,6 +7,7 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1"
+autocompress = "0.6"
 camino = "1"
 camino-tempfile = "1"
 clap = { version = "4", features = ["derive", "env"] }
@@ -31,6 +32,9 @@ zip = { version = "6", features = ["deflate"] }
 assert_cmd = "2"
 assert_fs = "1"
 assert_matches = "1"
+bzip2 = "0.6"
 camino-tempfile-ext = "0.3"
 insta = "1"
 wiremock = "0.6"
+xz2 = "0.1"
+zstd = "0.13"
