@@ -36,16 +36,11 @@ pub struct ValidatorsOut {
     pub last_modified: Option<String>,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum WasModified {
-    Yes,
-    No,
-}
-
 /// Fetches the latest release from GitHub.
 ///
 /// Uses conditional requests via `ETag` and `Last-Modified` headers when validators
-/// are provided. Returns the release, updated validators, and whether content changed.
+/// are provided. Returns an optional release (None on 304), updated validators, and
+/// whether content changed.
 ///
 /// # Errors
 ///
@@ -59,7 +54,7 @@ pub async fn fetch_latest(
     host: Option<&str>,
     allow_prerelease: bool,
     validators_in: &Validators,
-) -> Result<(Release, ValidatorsOut, WasModified)> {
+) -> Result<(Option<Release>, ValidatorsOut, bool)> {
     let base_url = host.unwrap_or("https://api.github.com");
     let url = if allow_prerelease {
         format!("{base_url}/repos/{repo}/releases")
@@ -102,14 +97,7 @@ pub async fn fetch_latest(
     };
 
     if status == StatusCode::NOT_MODIFIED {
-        let empty_release = Release {
-            tag_name: String::new(),
-            assets: Vec::new(),
-            prerelease: false,
-            draft: false,
-            created_at: None,
-        };
-        return Ok((empty_release, validators_out, WasModified::No));
+        return Ok((None, validators_out, false));
     }
 
     let response = response.error_for_status()?;
@@ -126,14 +114,14 @@ pub async fn fetch_latest(
         response.json::<Release>().await?
     };
 
-    Ok((release, validators_out, WasModified::Yes))
+    Ok((Some(release), validators_out, true))
 }
 
 #[cfg(test)]
 mod tests {
     use wiremock::{
         Mock, MockServer, ResponseTemplate,
-        matchers::{method, path},
+        matchers::{header, header_exists, method, path},
     };
 
     use super::*;
@@ -176,8 +164,10 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        let (release, validators_out, was_modified) = result.unwrap();
+        let (release_opt, validators_out, was_modified) = result.unwrap();
 
+        assert!(release_opt.is_some());
+        let release = release_opt.unwrap();
         assert_eq!(release.tag_name, "v0.1.3");
         assert!(!release.prerelease);
         assert_eq!(release.assets.len(), 1);
@@ -189,7 +179,7 @@ mod tests {
             validators_out.last_modified,
             Some("Mon, 27 Oct 2025 12:00:00 GMT".to_string())
         );
-        assert_eq!(was_modified, WasModified::Yes);
+        assert!(was_modified);
     }
 
     #[tokio::test]
@@ -221,14 +211,51 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        let (_release, validators_out, was_modified) = result.unwrap();
+        let (release_opt, validators_out, was_modified) = result.unwrap();
 
+        assert!(release_opt.is_none());
         assert_eq!(validators_out.etag, Some("\"abc123\"".to_string()));
         assert_eq!(
             validators_out.last_modified,
             Some("Mon, 27 Oct 2025 12:00:00 GMT".to_string())
         );
-        assert_eq!(was_modified, WasModified::No);
+        assert!(!was_modified);
+    }
+
+    #[tokio::test]
+    async fn test_fetch_latest_sends_validators_in_request() {
+        let mock_server = MockServer::start().await;
+
+        let release_json = serde_json::json!({
+            "tag_name": "v0.1.0",
+            "prerelease": false,
+            "assets": []
+        });
+
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/releases/latest"))
+            .and(header_exists("if-none-match"))
+            .and(header_exists("if-modified-since"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&release_json))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let validators = Validators {
+            etag: Some("\"etag-value\"".to_string()),
+            last_modified: Some("Wed, 21 Oct 2015 07:28:00 GMT".to_string()),
+        };
+
+        let result = fetch_latest(
+            "owner/repo",
+            None,
+            Some(&mock_server.uri()),
+            false,
+            &validators,
+        )
+        .await;
+
+        assert!(result.is_ok());
     }
 
     #[tokio::test]
@@ -283,20 +310,20 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        let (release, validators_out, was_modified) = result.unwrap();
+        let (release_opt, validators_out, was_modified) = result.unwrap();
 
+        assert!(release_opt.is_some());
+        let release = release_opt.unwrap();
         assert_eq!(release.tag_name, "v0.2.0-beta.1");
         assert!(release.prerelease);
         assert_eq!(release.assets[0].name, "app-beta.tar.gz");
 
         assert_eq!(validators_out.etag, Some("\"xyz789\"".to_string()));
-        assert_eq!(was_modified, WasModified::Yes);
+        assert!(was_modified);
     }
 
     #[tokio::test]
     async fn test_fetch_latest_includes_bearer_token_when_provided() {
-        use wiremock::matchers::header;
-
         let mock_server = MockServer::start().await;
 
         let release_json = serde_json::json!({
@@ -324,8 +351,9 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        let (release, _, _) = result.unwrap();
-        assert_eq!(release.tag_name, "v0.1.0");
+        let (release_opt, _, _) = result.unwrap();
+        assert!(release_opt.is_some());
+        assert_eq!(release_opt.unwrap().tag_name, "v0.1.0");
     }
 
     #[tokio::test]
@@ -411,8 +439,10 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        let (release, _, _) = result.unwrap();
+        let (release_opt, _, _) = result.unwrap();
 
+        assert!(release_opt.is_some());
+        let release = release_opt.unwrap();
         assert_eq!(release.tag_name, "v0.2.0");
         assert!(!release.draft);
         assert_eq!(release.assets[0].name, "app-stable.tar.gz");
