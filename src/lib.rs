@@ -2,6 +2,8 @@ use std::io;
 
 use thiserror::Error;
 
+pub mod state;
+
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("IO error: {0}")]
