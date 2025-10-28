@@ -1,5 +1,6 @@
 use anyhow::Result;
 use jiff::Timestamp;
+use regex::Regex;
 use reqwest::{
     StatusCode,
     header::{ACCEPT, AUTHORIZATION, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LAST_MODIFIED},
@@ -115,6 +116,11 @@ pub async fn fetch_latest(
     };
 
     Ok((Some(release), validators_out, true))
+}
+
+#[must_use]
+pub fn select_asset<'a>(assets: &'a [Asset], pattern: &Regex) -> Option<&'a Asset> {
+    assets.iter().find(|asset| pattern.is_match(&asset.name))
 }
 
 #[cfg(test)]
@@ -496,5 +502,80 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.to_string().contains("403"));
+    }
+
+    #[test]
+    fn test_select_asset_returns_first_match() {
+        let assets = vec![
+            Asset {
+                name: "app-linux-amd64.tar.gz".to_string(),
+                browser_download_url: "https://example.com/app-linux-amd64.tar.gz".to_string(),
+                size: 1024,
+            },
+            Asset {
+                name: "app-darwin-amd64.tar.gz".to_string(),
+                browser_download_url: "https://example.com/app-darwin-amd64.tar.gz".to_string(),
+                size: 2048,
+            },
+            Asset {
+                name: "app-linux-arm64.tar.gz".to_string(),
+                browser_download_url: "https://example.com/app-linux-arm64.tar.gz".to_string(),
+                size: 3072,
+            },
+        ];
+
+        let pattern = Regex::new(r"app-linux-.*\.tar\.gz").unwrap();
+        let result = select_asset(&assets, &pattern);
+
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().name, "app-linux-amd64.tar.gz");
+    }
+
+    #[test]
+    fn test_select_asset_returns_none_when_no_match() {
+        let assets = vec![
+            Asset {
+                name: "app-darwin-amd64.tar.gz".to_string(),
+                browser_download_url: "https://example.com/app-darwin-amd64.tar.gz".to_string(),
+                size: 1024,
+            },
+            Asset {
+                name: "app-windows-amd64.zip".to_string(),
+                browser_download_url: "https://example.com/app-windows-amd64.zip".to_string(),
+                size: 2048,
+            },
+        ];
+
+        let pattern = Regex::new(r"app-linux-.*\.tar\.gz").unwrap();
+        let result = select_asset(&assets, &pattern);
+
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_select_asset_returns_first_when_multiple_matches() {
+        let assets = vec![
+            Asset {
+                name: "checksums.txt".to_string(),
+                browser_download_url: "https://example.com/checksums.txt".to_string(),
+                size: 128,
+            },
+            Asset {
+                name: "SHA256SUMS".to_string(),
+                browser_download_url: "https://example.com/SHA256SUMS".to_string(),
+                size: 256,
+            },
+            Asset {
+                name: "checksums.sha256".to_string(),
+                browser_download_url: "https://example.com/checksums.sha256".to_string(),
+                size: 200,
+            },
+        ];
+
+        let pattern = Regex::new(r"checksum|SHA256").unwrap();
+        let result = select_asset(&assets, &pattern);
+
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().name, "checksums.txt");
     }
 }
