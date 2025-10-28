@@ -1,3 +1,5 @@
+use std::{fs::File, io};
+
 use camino::Utf8Path;
 use sha2::{Digest, Sha256};
 use thiserror::Error;
@@ -18,7 +20,7 @@ pub enum VerifyError {
     },
 
     #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(#[from] io::Error),
 
     #[error("HTTP request failed: {0}")]
     Request(#[from] reqwest::Error),
@@ -120,11 +122,16 @@ pub async fn fetch_and_verify_checksum(
         .map(|(hex, _)| hex)
         .ok_or_else(|| VerifyError::NotFound(asset_filename.to_string()))?;
 
-    let mut file = std::fs::File::open(downloaded_path)?;
-    let mut hasher = Sha256::new();
-    std::io::copy(&mut file, &mut hasher)?;
-    let actual_hash = hasher.finalize();
-    let actual_hex = format!("{actual_hash:x}");
+    let path = downloaded_path.to_owned();
+    let actual_hex = tokio::task::spawn_blocking(move || {
+        let mut file = File::open(&path)?;
+        let mut hasher = Sha256::new();
+        io::copy(&mut file, &mut hasher)?;
+        let actual_hash = hasher.finalize();
+        Ok::<String, io::Error>(format!("{actual_hash:x}"))
+    })
+    .await
+    .map_err(io::Error::other)??;
 
     if !actual_hex.eq_ignore_ascii_case(expected_hex) {
         return Err(VerifyError::Mismatch {
