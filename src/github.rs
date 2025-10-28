@@ -123,16 +123,6 @@ pub fn select_asset<'a>(assets: &'a [Asset], pattern: &Regex) -> Option<&'a Asse
     assets.iter().find(|asset| pattern.is_match(&asset.name))
 }
 
-#[must_use]
-pub fn select_checksum_asset<'a>(
-    assets: &'a [Asset],
-    checksum_pattern: &Regex,
-) -> Option<&'a Asset> {
-    assets
-        .iter()
-        .find(|asset| checksum_pattern.is_match(&asset.name))
-}
-
 #[cfg(test)]
 mod tests {
     use wiremock::{
@@ -560,32 +550,5 @@ mod tests {
         let result = select_asset(&assets, &pattern);
 
         assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_select_checksum_asset_returns_first_match() {
-        let assets = vec![
-            Asset {
-                name: "app-linux-amd64.tar.gz".to_string(),
-                browser_download_url: "https://example.com/app-linux-amd64.tar.gz".to_string(),
-                size: 1024,
-            },
-            Asset {
-                name: "SHA256SUMS".to_string(),
-                browser_download_url: "https://example.com/SHA256SUMS".to_string(),
-                size: 256,
-            },
-            Asset {
-                name: "checksums.txt".to_string(),
-                browser_download_url: "https://example.com/checksums.txt".to_string(),
-                size: 128,
-            },
-        ];
-
-        let pattern = Regex::new(r"SHA256SUMS|checksums\.txt").unwrap();
-        let result = select_checksum_asset(&assets, &pattern);
-
-        assert!(result.is_some());
-        assert_eq!(result.unwrap().name, "SHA256SUMS");
     }
 }
