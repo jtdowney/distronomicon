@@ -4,6 +4,9 @@ use camino::Utf8Path;
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
+const SHA256_HEX_LENGTH: usize = 64;
+const MIN_LINE_LENGTH: usize = SHA256_HEX_LENGTH + 2;
+
 #[derive(Debug, Error)]
 pub enum VerifyError {
     #[error("failed to parse checksum text: {0}")]
@@ -49,13 +52,13 @@ pub fn parse_checksum_text(s: &str) -> Result<Vec<(String, String)>> {
             continue;
         }
 
-        if line.len() < 66 {
+        if line.len() < MIN_LINE_LENGTH {
             return Err(VerifyError::ParseError(format!(
                 "line too short to contain checksum and filename: {line}"
             )));
         }
 
-        let (hex, rest) = line.split_at(64);
+        let (hex, rest) = line.split_at(SHA256_HEX_LENGTH);
 
         if !hex.chars().all(|c| c.is_ascii_hexdigit()) {
             return Err(VerifyError::ParseError(format!(
