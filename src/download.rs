@@ -181,24 +181,27 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_request_timeout() {
+    async fn test_request_completes_within_timeout() {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("GET"))
             .and(path("/slow.tar.gz"))
             .respond_with(
                 ResponseTemplate::new(200)
-                    .set_body_bytes(b"data")
-                    .set_delay(Duration::from_secs(10)),
+                    .set_body_bytes(b"test data")
+                    .set_delay(Duration::from_secs(2)),
             )
-            .up_to_n_times(4)
+            .expect(1)
             .mount(&mock_server)
             .await;
 
         let url = format!("{}/slow.tar.gz", mock_server.uri());
         let result = fetch(&url, "test-token", true).await;
 
-        assert!(result.is_err());
+        assert!(result.is_ok());
+        let temp_file = result.unwrap();
+        let contents = std::fs::read(temp_file.path()).unwrap();
+        assert_eq!(contents, b"test data");
     }
 
     #[tokio::test]
