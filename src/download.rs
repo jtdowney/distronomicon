@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{io::Write, time::Duration};
 
 use camino_tempfile::NamedUtf8TempFile;
 use futures_util::StreamExt;
@@ -24,11 +24,17 @@ pub enum DownloadError {
 pub type Result<T> = std::result::Result<T, DownloadError>;
 
 const MAX_RETRIES: u32 = 3;
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Downloads a file from the specified URL with automatic retry on transient failures.
 ///
 /// Streams the response body to a temporary file and ensures data is fsynced before returning.
 /// Uses exponential backoff retry strategy for transient HTTP errors (5xx status codes).
+///
+/// # Timeouts
+///
+/// Requests timeout after 5 seconds to prevent indefinite hangs on slow or stalled connections.
+/// Adjust `REQUEST_TIMEOUT` constant based on expected file sizes and network conditions.
 ///
 /// # Security
 ///
@@ -41,6 +47,7 @@ const MAX_RETRIES: u32 = 3;
 /// Returns `DownloadError` if:
 /// - The URL scheme is not HTTPS (unless `allow_insecure` is true)
 /// - The HTTP request fails after all retries
+/// - The request times out
 /// - The server returns a non-success status code
 /// - Writing to the temporary file fails
 /// - Fsyncing the file fails
@@ -52,7 +59,10 @@ pub async fn fetch(url: &str, token: &str, allow_insecure: bool) -> Result<Named
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(MAX_RETRIES);
     let retry_middleware = RetryTransientMiddleware::new_with_policy(retry_policy);
 
-    let client: ClientWithMiddleware = ClientBuilder::new(reqwest::Client::new())
+    let reqwest_client = reqwest::Client::builder()
+        .timeout(REQUEST_TIMEOUT)
+        .build()?;
+    let client: ClientWithMiddleware = ClientBuilder::new(reqwest_client)
         .with(retry_middleware)
         .build();
 
@@ -78,9 +88,11 @@ pub async fn fetch(url: &str, token: &str, allow_insecure: bool) -> Result<Named
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use wiremock::{
         Mock, MockServer, ResponseTemplate,
-        matchers::{method, path},
+        matchers::{header, method, path},
     };
 
     use super::*;
@@ -136,8 +148,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_sends_authorization_header() {
-        use wiremock::matchers::header;
-
         let mock_server = MockServer::start().await;
         let test_token = "test-secret-token";
         let body_content = b"authenticated response";
@@ -166,7 +176,28 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(DownloadError::InsecureUrl) => {}
-            other => panic!("Expected InsecureUrl error, got: {:?}", other),
+            other => panic!("Expected InsecureUrl error, got: {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn test_request_timeout() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/slow.tar.gz"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_bytes(b"data")
+                    .set_delay(Duration::from_secs(10)),
+            )
+            .up_to_n_times(4)
+            .mount(&mock_server)
+            .await;
+
+        let url = format!("{}/slow.tar.gz", mock_server.uri());
+        let result = fetch(&url, "test-token", true).await;
+
+        assert!(result.is_err());
     }
 }
