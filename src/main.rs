@@ -1,3 +1,4 @@
+use camino::Utf8PathBuf;
 use clap::Parser;
 use tracing::{Level, trace};
 use tracing_subscriber::FmtSubscriber;
@@ -27,6 +28,17 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Version => {
             trace!("Subcommand: version");
+
+            let opt_root = args
+                .install_root
+                .unwrap_or_else(|| Utf8PathBuf::from("/opt"));
+
+            if let Some(tag) = distronomicon::version::current_tag(&opt_root, &args.app)? {
+                println!("{tag}");
+            } else {
+                eprintln!("No version installed");
+                std::process::exit(1);
+            }
         }
     }
 
