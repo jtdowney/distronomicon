@@ -34,7 +34,7 @@ Options:
       --state-directory <STATE_DIRECTORY>
           State directory [env: STATE_DIRECTORY=]
       --install-root <INSTALL_ROOT>
-          Install root directory (default: /opt/<app>)
+          Install root directory [env: PREFIX=] [default: /opt]
   -v, --verbose...
           Verbose output (-v, -vv)
   -h, --help

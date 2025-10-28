@@ -46,8 +46,13 @@ pub struct Args {
     #[arg(long, env = "STATE_DIRECTORY", help = "State directory")]
     pub state_directory: Utf8PathBuf,
 
-    #[arg(long, help = "Install root directory (default: /opt/<app>)")]
-    pub install_root: Option<Utf8PathBuf>,
+    #[arg(
+        long,
+        env = "PREFIX",
+        default_value = "/opt",
+        help = "Install root directory"
+    )]
+    pub install_root: Utf8PathBuf,
 
     #[arg(short, long, action = clap::ArgAction::Count, help = "Verbose output (-v, -vv)")]
     pub verbose: u8,
@@ -119,10 +124,7 @@ mod tests {
         assert_eq!(args.retain, 5);
         assert!(args.skip_verification);
         assert_eq!(args.state_directory, Utf8PathBuf::from("/custom/state"));
-        assert_eq!(
-            args.install_root.as_deref(),
-            Some(Utf8PathBuf::from("/custom/opt/myapp").as_path())
-        );
+        assert_eq!(args.install_root, Utf8PathBuf::from("/custom/opt/myapp"));
         assert_eq!(args.verbose, 2);
 
         assert!(matches!(args.command, Commands::Update));
@@ -158,7 +160,7 @@ mod tests {
             args.state_directory,
             Utf8PathBuf::from("/var/lib/distronomicon/myapp")
         );
-        assert!(args.install_root.is_none());
+        assert_eq!(args.install_root, Utf8PathBuf::from("/opt"));
 
         assert!(matches!(args.command, Commands::Check));
     }

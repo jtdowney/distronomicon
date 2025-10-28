@@ -27,6 +27,13 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Version => {
             trace!("Subcommand: version");
+
+            if let Some(tag) = distronomicon::version::current_tag(&args.install_root, &args.app)? {
+                println!("{tag}");
+            } else {
+                eprintln!("No version installed");
+                std::process::exit(1);
+            }
         }
     }
 
