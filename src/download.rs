@@ -200,4 +200,38 @@ mod tests {
 
         assert!(result.is_err());
     }
+
+    #[tokio::test]
+    async fn test_fails_after_max_retries() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/asset.tar.gz"))
+            .respond_with(ResponseTemplate::new(503).set_body_string("Service Unavailable"))
+            .expect(4)
+            .mount(&mock_server)
+            .await;
+
+        let url = format!("{}/asset.tar.gz", mock_server.uri());
+        let result = fetch(&url, "test-token", true).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_does_not_retry_client_errors() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/asset.tar.gz"))
+            .respond_with(ResponseTemplate::new(404).set_body_string("Not Found"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let url = format!("{}/asset.tar.gz", mock_server.uri());
+        let result = fetch(&url, "test-token", true).await;
+
+        assert!(result.is_err());
+    }
 }
