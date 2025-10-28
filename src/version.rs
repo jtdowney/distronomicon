@@ -33,7 +33,7 @@ pub fn current_tag<P: AsRef<Utf8Path>>(prefix: P, app: &str) -> Result<Option<St
     let prefix = prefix.as_ref();
     let bin_dir = prefix.join(app).join("bin");
 
-    if !bin_dir.exists() {
+    if !bin_dir.is_dir() {
         return Ok(None);
     }
 
