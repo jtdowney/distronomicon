@@ -1,12 +1,28 @@
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
 
+fn validate_app_name(s: &str) -> Result<String, String> {
+    if s.contains('/') {
+        return Err("app name cannot contain '/'".to_string());
+    }
+    if s.contains('\\') {
+        return Err("app name cannot contain '\\'".to_string());
+    }
+    if s.contains("..") {
+        return Err("app name cannot contain '..'".to_string());
+    }
+    if s.contains('\0') {
+        return Err("app name cannot contain null bytes".to_string());
+    }
+    Ok(s.to_string())
+}
+
 #[derive(Parser, Debug)]
 pub struct Args {
     #[arg(long, help = "GitHub repository (owner/name)")]
     pub repo: String,
 
-    #[arg(long, help = "Application name")]
+    #[arg(long, value_parser = validate_app_name, help = "Application name")]
     pub app: String,
 
     #[arg(long, help = "Asset filename pattern (regex)")]
@@ -163,5 +179,79 @@ mod tests {
         assert_eq!(args.install_root, Utf8PathBuf::from("/opt"));
 
         assert!(matches!(args.command, Commands::Check));
+    }
+
+    #[test]
+    fn test_reject_app_name_with_slash() {
+        let result = Args::try_parse_from([
+            "distronomicon",
+            "--repo",
+            "owner/name",
+            "--app",
+            "app/name",
+            "--pattern",
+            ".*\\.tar\\.gz",
+            "--state-directory",
+            "/var/lib",
+            "check",
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_reject_app_name_with_backslash() {
+        let result = Args::try_parse_from([
+            "distronomicon",
+            "--repo",
+            "owner/name",
+            "--app",
+            "app\\name",
+            "--pattern",
+            ".*\\.tar\\.gz",
+            "--state-directory",
+            "/var/lib",
+            "check",
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_reject_app_name_with_dot_dot() {
+        let result = Args::try_parse_from([
+            "distronomicon",
+            "--repo",
+            "owner/name",
+            "--app",
+            "../app",
+            "--pattern",
+            ".*\\.tar\\.gz",
+            "--state-directory",
+            "/var/lib",
+            "check",
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_accept_valid_app_names() {
+        for app in ["myapp", "my-app", "my_app", "app123", "APP"] {
+            let result = Args::try_parse_from([
+                "distronomicon",
+                "--repo",
+                "owner/name",
+                "--app",
+                app,
+                "--pattern",
+                ".*\\.tar\\.gz",
+                "--state-directory",
+                "/var/lib",
+                "check",
+            ]);
+
+            assert!(result.is_ok(), "Valid app name '{app}' should be accepted");
+        }
     }
 }
