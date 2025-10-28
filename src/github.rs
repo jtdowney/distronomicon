@@ -1,7 +1,9 @@
 use anyhow::Result;
 use jiff::Timestamp;
-use reqwest::StatusCode;
-use reqwest::header::{ACCEPT, AUTHORIZATION, IF_MODIFIED_SINCE, IF_NONE_MATCH};
+use reqwest::{
+    StatusCode,
+    header::{ACCEPT, AUTHORIZATION, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LAST_MODIFIED},
+};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -90,11 +92,11 @@ pub async fn fetch_latest(
     let headers = response.headers();
     let validators_out = ValidatorsOut {
         etag: headers
-            .get("etag")
+            .get(ETAG)
             .and_then(|h| h.to_str().ok())
             .map(String::from),
         last_modified: headers
-            .get("last-modified")
+            .get(LAST_MODIFIED)
             .and_then(|h| h.to_str().ok())
             .map(String::from),
     };
