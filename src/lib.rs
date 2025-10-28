@@ -2,4 +2,5 @@ pub mod download;
 pub mod github;
 pub mod lock;
 pub mod state;
+pub mod verify;
 pub mod version;
