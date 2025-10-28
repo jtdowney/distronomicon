@@ -15,18 +15,18 @@ pub type Result<T> = std::result::Result<T, VersionError>;
 ///
 /// Looks under `<prefix>/<app>/bin/` for symlinks that point into `../releases/<tag>/...`
 /// and extracts the `<tag>` component. When multiple symlinks exist, returns the tag from
-/// the lexographically last symlink name.
+/// the lexicographically last symlink name.
 ///
 /// Returns `Ok(None)` if:
 /// - The bin directory does not exist
 /// - The bin directory is empty
 /// - No symlinks point into the releases directory
+/// - All symlinks fail to read or don't point to releases (errors are ignored)
 ///
 /// # Errors
 ///
 /// Returns an error if:
 /// - Reading the bin directory fails due to I/O errors
-/// - Reading symlink targets fails
 pub fn current_tag<P: AsRef<Utf8Path>>(prefix: P, app: &str) -> Result<Option<String>> {
     let prefix = prefix.as_ref();
     let bin_dir = prefix.join(app).join("bin");
