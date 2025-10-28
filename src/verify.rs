@@ -42,9 +42,10 @@ pub type Result<T> = std::result::Result<T, VerifyError>;
 pub fn parse_checksum_text(s: &str) -> Result<Vec<(String, String)>> {
     let mut result = Vec::new();
 
-    for line in s.lines() {
-        let line = line.trim();
-        if line.is_empty() {
+    for raw_line in s.lines() {
+        let line = raw_line.trim_end_matches('\r');
+        let line = line.trim_start();
+        if line.is_empty() || line.starts_with('#') {
             continue;
         }
 
@@ -225,6 +226,47 @@ mod tests {
     fn test_parse_empty_string() {
         let result = parse_checksum_text("").unwrap();
         assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_with_comments() {
+        let input = format!(
+            "# This is a comment\n{}\n # Another comment\n{}",
+            "a".repeat(64) + "  file1.tar.gz",
+            "b".repeat(64) + "  file2.tar.gz"
+        );
+        let result = parse_checksum_text(&input).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].0, "a".repeat(64));
+        assert_eq!(result[0].1, "file1.tar.gz");
+        assert_eq!(result[1].0, "b".repeat(64));
+        assert_eq!(result[1].1, "file2.tar.gz");
+    }
+
+    #[test]
+    fn test_parse_with_crlf_line_endings() {
+        let input = format!(
+            "{}\r\n{}",
+            "a".repeat(64) + "  file1.tar.gz",
+            "b".repeat(64) + " *file2.zip"
+        );
+        let result = parse_checksum_text(&input).unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].0, "a".repeat(64));
+        assert_eq!(result[0].1, "file1.tar.gz");
+        assert_eq!(result[1].0, "b".repeat(64));
+        assert_eq!(result[1].1, "file2.zip");
+    }
+
+    #[test]
+    fn test_parse_mixed_comments_and_crlf() {
+        let input = format!(
+            "# Header comment\r\n{}\r\n # Middle comment\r\n{}",
+            "a".repeat(64) + "  file.tar.gz",
+            "b".repeat(64) + " *binary.zip"
+        );
+        let result = parse_checksum_text(&input).unwrap();
+        assert_eq!(result.len(), 2);
     }
 
     #[tokio::test]
