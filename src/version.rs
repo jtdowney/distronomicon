@@ -73,7 +73,7 @@ pub fn current_tag<P: AsRef<Utf8Path>>(prefix: P, app: &str) -> Result<Option<St
         return Ok(None);
     }
 
-    symlinks.sort_by_key(|(file_name, _tag)| file_name.clone());
+    symlinks.sort_by(|(a, _), (b, _)| a.cmp(b));
     #[allow(clippy::missing_panics_doc)]
     let (_file_name, tag) = symlinks.last().unwrap();
 
