@@ -1,5 +1,6 @@
 use anyhow::Result;
 use jiff::Timestamp;
+use reqwest::StatusCode;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -81,6 +82,7 @@ pub async fn fetch_latest(
     }
 
     let response = request.send().await?;
+    let status = response.status();
     let headers = response.headers();
     let validators_out = ValidatorsOut {
         etag: headers
@@ -93,7 +95,7 @@ pub async fn fetch_latest(
             .map(String::from),
     };
 
-    if response.status() == 304 {
+    if status == StatusCode::NOT_MODIFIED {
         let empty_release = Release {
             tag_name: String::new(),
             assets: Vec::new(),
@@ -103,6 +105,8 @@ pub async fn fetch_latest(
         };
         return Ok((empty_release, validators_out, WasModified::No));
     }
+
+    let response = response.error_for_status()?;
 
     let release = if allow_prerelease {
         let mut releases = response.json::<Vec<Release>>().await?;
@@ -406,5 +410,55 @@ mod tests {
         assert_eq!(release.tag_name, "v0.2.0");
         assert!(!release.draft);
         assert_eq!(release.assets[0].name, "app-stable.tar.gz");
+    }
+
+    #[tokio::test]
+    async fn test_fetch_latest_returns_error_for_404() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/releases/latest"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&mock_server)
+            .await;
+
+        let validators = Validators::default();
+        let result = fetch_latest(
+            "owner/repo",
+            None,
+            Some(&mock_server.uri()),
+            false,
+            &validators,
+        )
+        .await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("404"));
+    }
+
+    #[tokio::test]
+    async fn test_fetch_latest_returns_error_for_403() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/releases/latest"))
+            .respond_with(ResponseTemplate::new(403))
+            .mount(&mock_server)
+            .await;
+
+        let validators = Validators::default();
+        let result = fetch_latest(
+            "owner/repo",
+            None,
+            Some(&mock_server.uri()),
+            false,
+            &validators,
+        )
+        .await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("403"));
     }
 }
