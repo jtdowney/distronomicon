@@ -1,4 +1,4 @@
-use std::{fs::File, io, time::Duration};
+use std::{collections::HashMap, fs::File, io, time::Duration};
 
 use camino::Utf8Path;
 use sha2::{Digest, Sha256};
@@ -122,12 +122,13 @@ pub async fn fetch_and_verify_checksum(
     let response = request.send().await?.error_for_status()?;
     let checksum_text = response.text().await?;
 
-    let checksums = parse_checksum_text(&checksum_text)?;
+    let checksums: HashMap<_, _> = parse_checksum_text(&checksum_text)?
+        .into_iter()
+        .map(|(hex, filename)| (filename, hex))
+        .collect();
 
     let expected_hex = checksums
-        .iter()
-        .find(|(_, filename)| filename == asset_filename)
-        .map(|(hex, _)| hex)
+        .get(asset_filename)
         .ok_or_else(|| VerifyError::NotFound(asset_filename.to_string()))?;
 
     let path = downloaded_path.to_owned();
