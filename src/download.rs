@@ -24,7 +24,7 @@ pub enum DownloadError {
 pub type Result<T> = std::result::Result<T, DownloadError>;
 
 const MAX_RETRIES: u32 = 3;
-const REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 
 /// Downloads a file from the specified URL with automatic retry on transient failures.
 ///
