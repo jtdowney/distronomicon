@@ -33,7 +33,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 ///
 /// # Timeouts
 ///
-/// Requests timeout after 5 seconds to prevent indefinite hangs on slow or stalled connections.
+/// Requests timeout after 5 minutes (300 seconds) to prevent indefinite hangs on slow or stalled connections.
 /// Adjust `REQUEST_TIMEOUT` constant based on expected file sizes and network conditions.
 ///
 /// # Security
@@ -88,7 +88,7 @@ pub async fn fetch(url: &str, token: &str, allow_insecure: bool) -> Result<Named
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::{fs, time::Duration};
 
     use wiremock::{
         Mock, MockServer, ResponseTemplate,
@@ -120,8 +120,9 @@ mod tests {
         let result = fetch(&url, "test-token", true).await;
 
         assert!(result.is_ok());
+
         let temp_file = result.unwrap();
-        let contents = std::fs::read(temp_file.path()).unwrap();
+        let contents = fs::read(temp_file.path()).unwrap();
         assert_eq!(contents, body_content);
     }
 
@@ -141,8 +142,9 @@ mod tests {
         let result = fetch(&url, "test-token", true).await;
 
         assert!(result.is_ok());
+
         let temp_file = result.unwrap();
-        let contents = std::fs::read(temp_file.path()).unwrap();
+        let contents = fs::read(temp_file.path()).unwrap();
         assert_eq!(contents, body_content);
     }
 
@@ -164,8 +166,9 @@ mod tests {
         let result = fetch(&url, test_token, true).await;
 
         assert!(result.is_ok());
+
         let temp_file = result.unwrap();
-        let contents = std::fs::read(temp_file.path()).unwrap();
+        let contents = fs::read(temp_file.path()).unwrap();
         assert_eq!(contents, body_content);
     }
 
@@ -199,8 +202,9 @@ mod tests {
         let result = fetch(&url, "test-token", true).await;
 
         assert!(result.is_ok());
+
         let temp_file = result.unwrap();
-        let contents = std::fs::read(temp_file.path()).unwrap();
+        let contents = fs::read(temp_file.path()).unwrap();
         assert_eq!(contents, b"test data");
     }
 
