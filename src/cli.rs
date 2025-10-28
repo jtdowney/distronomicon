@@ -2,6 +2,9 @@ use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
 
 fn validate_app_name(s: &str) -> Result<String, String> {
+    if s.is_empty() {
+        return Err("app name cannot be empty".to_string());
+    }
     if s.contains('/') {
         return Err("app name cannot contain '/'".to_string());
     }
@@ -225,6 +228,42 @@ mod tests {
             "owner/name",
             "--app",
             "../app",
+            "--pattern",
+            ".*\\.tar\\.gz",
+            "--state-directory",
+            "/var/lib",
+            "check",
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_reject_empty_app_name() {
+        let result = Args::try_parse_from([
+            "distronomicon",
+            "--repo",
+            "owner/name",
+            "--app",
+            "",
+            "--pattern",
+            ".*\\.tar\\.gz",
+            "--state-directory",
+            "/var/lib",
+            "check",
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_reject_app_name_with_null_byte() {
+        let result = Args::try_parse_from([
+            "distronomicon",
+            "--repo",
+            "owner/name",
+            "--app",
+            "app\0name",
             "--pattern",
             ".*\\.tar\\.gz",
             "--state-directory",
