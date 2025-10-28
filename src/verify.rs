@@ -237,6 +237,23 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_ignores_comment_lines_and_leading_ws() {
+        let input = format!("   # comment line\r\n{}  file.tar.gz\r\n", "a".repeat(64));
+        let result = parse_checksum_text(&input).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].1, "file.tar.gz");
+    }
+
+    #[test]
+    fn test_parse_crlf_endings() {
+        let input = format!("{}  win.bin\r\n", "b".repeat(64));
+        let result = parse_checksum_text(&input).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, "b".repeat(64));
+        assert_eq!(result[0].1, "win.bin");
+    }
+
+    #[test]
     fn test_parse_with_comments() {
         let input = format!(
             "# This is a comment\n{}\n # Another comment\n{}",
