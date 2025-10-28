@@ -16,6 +16,9 @@ pub enum DownloadError {
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
+
+    #[error("Insecure URL: Authorization header cannot be sent over non-HTTPS connection")]
+    InsecureUrl,
 }
 
 pub type Result<T> = std::result::Result<T, DownloadError>;
@@ -27,14 +30,25 @@ const MAX_RETRIES: u32 = 3;
 /// Streams the response body to a temporary file and ensures data is fsynced before returning.
 /// Uses exponential backoff retry strategy for transient HTTP errors (5xx status codes).
 ///
+/// # Security
+///
+/// By default, this function enforces HTTPS to prevent sending the Authorization header
+/// over unencrypted connections. Set `allow_insecure` to `true` only for testing or
+/// development environments where HTTP is acceptable.
+///
 /// # Errors
 ///
 /// Returns `DownloadError` if:
+/// - The URL scheme is not HTTPS (unless `allow_insecure` is true)
 /// - The HTTP request fails after all retries
 /// - The server returns a non-success status code
 /// - Writing to the temporary file fails
 /// - Fsyncing the file fails
-pub async fn fetch(url: &str, token: &str) -> Result<NamedUtf8TempFile> {
+pub async fn fetch(url: &str, token: &str, allow_insecure: bool) -> Result<NamedUtf8TempFile> {
+    if !allow_insecure && !url.starts_with("https://") {
+        return Err(DownloadError::InsecureUrl);
+    }
+
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(MAX_RETRIES);
     let retry_middleware = RetryTransientMiddleware::new_with_policy(retry_policy);
 
@@ -91,7 +105,7 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch(&url, "test-token").await;
+        let result = fetch(&url, "test-token", true).await;
 
         assert!(result.is_ok());
         let temp_file = result.unwrap();
@@ -112,7 +126,7 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch(&url, "test-token").await;
+        let result = fetch(&url, "test-token", true).await;
 
         assert!(result.is_ok());
         let temp_file = result.unwrap();
@@ -137,11 +151,22 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch(&url, test_token).await;
+        let result = fetch(&url, test_token, true).await;
 
         assert!(result.is_ok());
         let temp_file = result.unwrap();
         let contents = std::fs::read(temp_file.path()).unwrap();
         assert_eq!(contents, body_content);
+    }
+
+    #[tokio::test]
+    async fn test_rejects_non_https_urls() {
+        let result = fetch("http://example.com/file.tar.gz", "secret-token", false).await;
+
+        assert!(result.is_err());
+        match result {
+            Err(DownloadError::InsecureUrl) => {}
+            other => panic!("Expected InsecureUrl error, got: {:?}", other),
+        }
     }
 }
