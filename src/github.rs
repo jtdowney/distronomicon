@@ -551,4 +551,31 @@ mod tests {
 
         assert!(result.is_none());
     }
+
+    #[test]
+    fn test_select_asset_returns_first_when_multiple_matches() {
+        let assets = vec![
+            Asset {
+                name: "checksums.txt".to_string(),
+                browser_download_url: "https://example.com/checksums.txt".to_string(),
+                size: 128,
+            },
+            Asset {
+                name: "SHA256SUMS".to_string(),
+                browser_download_url: "https://example.com/SHA256SUMS".to_string(),
+                size: 256,
+            },
+            Asset {
+                name: "checksums.sha256".to_string(),
+                browser_download_url: "https://example.com/checksums.sha256".to_string(),
+                size: 200,
+            },
+        ];
+
+        let pattern = Regex::new(r"checksum|SHA256").unwrap();
+        let result = select_asset(&assets, &pattern);
+
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().name, "checksums.txt");
+    }
 }
