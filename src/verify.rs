@@ -1,4 +1,4 @@
-use std::{fs::File, io};
+use std::{fs::File, io, time::Duration};
 
 use camino::Utf8Path;
 use sha2::{Digest, Sha256};
@@ -91,10 +91,15 @@ pub fn parse_checksum_text(s: &str) -> Result<Vec<(String, String)>> {
 /// `asset_filename`, computes the SHA256 hash of the file at `downloaded_path`,
 /// and compares them.
 ///
+/// # Timeouts
+///
+/// Requests timeout after 30 seconds to prevent indefinite hangs. Checksum files
+/// are typically small text files that should download quickly.
+///
 /// # Errors
 ///
 /// Returns an error if:
-/// - `VerifyError::Request` - HTTP request fails or returns non-2xx status
+/// - `VerifyError::Request` - HTTP request fails, times out, or returns non-2xx status
 /// - `VerifyError::ParseError` - Checksum file format is invalid
 /// - `VerifyError::NotFound` - `asset_filename` is not found in the checksum file
 /// - `VerifyError::Mismatch` - Computed hash does not match expected hash
@@ -105,7 +110,9 @@ pub async fn fetch_and_verify_checksum(
     token: Option<&str>,
     downloaded_path: &Utf8Path,
 ) -> Result<()> {
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()?;
     let mut request = client.get(checksum_url);
 
     if let Some(token) = token {
