@@ -21,12 +21,14 @@ pub type Result<T> = std::result::Result<T, VersionError>;
 /// - The bin directory does not exist
 /// - The bin directory is empty
 /// - No symlinks point into the releases directory
-/// - All symlinks fail to read or don't point to releases (errors are ignored)
 ///
 /// # Errors
 ///
 /// Returns an error if:
 /// - Reading the bin directory fails due to I/O errors
+/// - Reading directory entries fails
+/// - Reading symlink metadata fails
+/// - Reading symlink targets fails
 pub fn current_tag<P: AsRef<Utf8Path>>(prefix: P, app: &str) -> Result<Option<String>> {
     let prefix = prefix.as_ref();
     let bin_dir = prefix.join(app).join("bin");
@@ -36,26 +38,38 @@ pub fn current_tag<P: AsRef<Utf8Path>>(prefix: P, app: &str) -> Result<Option<St
     }
 
     let mut symlinks = fs::read_dir(&bin_dir)?
-        .filter_map(|entry| {
-            let entry = entry.ok()?;
-            let path = entry.path();
+        .map(
+            |entry| -> io::Result<Option<(std::ffi::OsString, String)>> {
+                let entry = entry?;
+                let path = entry.path();
 
-            let metadata = fs::symlink_metadata(&path).ok()?;
-            if !metadata.is_symlink() {
-                return None;
-            }
+                let metadata = fs::symlink_metadata(&path)?;
+                if !metadata.is_symlink() {
+                    return Ok(None);
+                }
 
-            let target = fs::read_link(&path).ok()?;
-            let target_path = if target.is_relative() {
-                bin_dir.join(target.to_string_lossy().as_ref())
-            } else {
-                Utf8PathBuf::from(target.to_string_lossy().as_ref())
-            };
+                let target = fs::read_link(&path)?;
+                let target_utf8 = Utf8PathBuf::from_path_buf(target.clone())
+                    .unwrap_or_else(|p| Utf8PathBuf::from(p.to_string_lossy().as_ref()));
 
-            let tag = extract_tag_from_path(&target_path)?;
-            let file_name = entry.file_name();
-            Some((file_name, tag))
-        })
+                let target_path = if target_utf8.is_relative() {
+                    bin_dir.join(target_utf8)
+                } else {
+                    target_utf8
+                };
+
+                let tag = match extract_tag_from_path(&target_path) {
+                    Some(t) => t,
+                    None => return Ok(None),
+                };
+
+                let file_name = entry.file_name();
+                Ok(Some((file_name, tag)))
+            },
+        )
+        .collect::<io::Result<Vec<Option<_>>>>()?
+        .into_iter()
+        .flatten()
         .collect::<Vec<_>>();
 
     if symlinks.is_empty() {
