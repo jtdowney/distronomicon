@@ -65,7 +65,8 @@ pub async fn fetch_latest(
     };
 
     let client = reqwest::Client::builder()
-        .user_agent("distronomicon/0.1")
+        .user_agent(concat!("distronomicon/", env!("CARGO_PKG_VERSION")))
+        .timeout(std::time::Duration::from_secs(10))
         .build()?;
 
     let mut request = client.get(&url);
