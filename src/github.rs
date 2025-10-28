@@ -1,6 +1,7 @@
 use anyhow::Result;
 use jiff::Timestamp;
 use reqwest::StatusCode;
+use reqwest::header::{ACCEPT, AUTHORIZATION, IF_MODIFIED_SINCE, IF_NONE_MATCH};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -69,17 +70,19 @@ pub async fn fetch_latest(
         .timeout(std::time::Duration::from_secs(10))
         .build()?;
 
-    let mut request = client.get(&url);
+    let mut request = client
+        .get(&url)
+        .header(ACCEPT, "application/vnd.github+json");
 
     if let Some(token) = token {
-        request = request.header("Authorization", format!("Bearer {token}"));
+        request = request.header(AUTHORIZATION, format!("Bearer {token}"));
     }
 
     if let Some(etag) = &validators_in.etag {
-        request = request.header("If-None-Match", etag);
+        request = request.header(IF_NONE_MATCH, etag);
     }
     if let Some(last_modified) = &validators_in.last_modified {
-        request = request.header("If-Modified-Since", last_modified);
+        request = request.header(IF_MODIFIED_SINCE, last_modified);
     }
 
     let response = request.send().await?;
