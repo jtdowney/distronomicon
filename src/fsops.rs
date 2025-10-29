@@ -1,7 +1,11 @@
-use std::fs::{self, File};
+use std::{
+    fs::{self, File},
+    io::{self, ErrorKind},
+};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use camino_tempfile::Builder;
+use rustix::fs::{CWD, RenameFlags, renameat_with};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -9,7 +13,7 @@ pub enum FsOpsError {
     #[error("release already exists: {0}")]
     AlreadyExists(String),
     #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
+    Io(#[from] io::Error),
 }
 
 pub type Result<T> = std::result::Result<T, FsOpsError>;
@@ -38,8 +42,10 @@ pub fn make_staging(root: impl AsRef<Utf8Path>, app: &str, tag: &str) -> Result<
 
 /// Atomically moves a directory from staging to releases, fsyncing the parent.
 ///
-/// Moves `src_dir` to `<releases_dir>/<tag>` using an atomic rename operation.
-/// After the move, the releases parent directory is fsynced to ensure durability.
+/// Moves `src_dir` to `<releases_dir>/<tag>` using `renameat_with` with `RENAME_NOREPLACE`
+/// to guarantee race-free atomicity. If the target already exists, the operation fails
+/// immediately without overwriting. After the move, the releases parent directory is
+/// fsynced to ensure durability.
 ///
 /// # Errors
 ///
@@ -55,11 +61,21 @@ pub fn atomic_move(
 ) -> Result<Utf8PathBuf> {
     let target = releases_dir.as_ref().join(tag);
 
-    if target.exists() {
-        return Err(FsOpsError::AlreadyExists(target.to_string()));
-    }
-
-    fs::rename(src_dir.as_ref(), &target)?;
+    renameat_with(
+        CWD,
+        src_dir.as_ref().as_std_path(),
+        CWD,
+        target.as_std_path(),
+        RenameFlags::NOREPLACE,
+    )
+    .map_err(|e| {
+        let io_err: io::Error = e.into();
+        if io_err.kind() == ErrorKind::AlreadyExists {
+            FsOpsError::AlreadyExists(target.to_string())
+        } else {
+            FsOpsError::Io(io_err)
+        }
+    })?;
 
     let parent = File::open(releases_dir.as_ref())?;
     parent.sync_all()?;

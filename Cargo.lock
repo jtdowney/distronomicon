@@ -565,6 +565,7 @@ dependencies = [
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
+ "rustix",
  "serde",
  "serde_json",
  "sha2",
