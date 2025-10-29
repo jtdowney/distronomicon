@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[test]
-    fn atomic_move_fsyncs_parent() {
+    fn atomic_move_succeeds_with_fsync() {
         let root = tempdir().unwrap();
         let tag = "v1.2.3";
 
@@ -231,7 +231,7 @@ mod tests {
 
         assert!(
             result.is_ok(),
-            "fsync should not cause errors in normal operation"
+            "atomic_move should complete without errors (including fsync step)"
         );
     }
 }
