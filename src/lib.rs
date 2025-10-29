@@ -1,5 +1,6 @@
 pub mod download;
 pub mod extract;
+pub mod fsops;
 pub mod github;
 pub mod lock;
 pub mod state;
