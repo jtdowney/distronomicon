@@ -80,10 +80,6 @@ impl<R: Read> Read for LimitedReader<R> {
         let n = self.inner.read(&mut buf[..max_read])?;
         self.read += n as u64;
 
-        if self.read > self.limit {
-            return Err(io::Error::other("file size limit exceeded"));
-        }
-
         Ok(n)
     }
 }
@@ -673,6 +669,54 @@ mod tests {
         extract_dir.create_dir_all().unwrap();
 
         unpack(&zip_path, &extract_dir).unwrap();
+
+        assert!(extract_dir.join("file.txt").exists());
+        assert!(extract_dir.join("subdir/nested.txt").exists());
+        assert!(!extract_dir.join("myapp-v1.0").exists());
+    }
+
+    #[test]
+    fn test_tar_single_root_stripped() {
+        let temp_dir = tempdir().unwrap();
+        let tar_gz_path = temp_dir.child("archive.tar.gz");
+
+        let file = File::create(&tar_gz_path).unwrap();
+        let encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut tar = tar::Builder::new(encoder);
+
+        // Add directory entry
+        let mut header = tar::Header::new_gnu();
+        header.set_entry_type(tar::EntryType::Directory);
+        header.set_size(0);
+        header.set_mode(0o755);
+        header.set_cksum();
+        tar.append_data(&mut header, "myapp-v1.0/", &[][..])
+            .unwrap();
+
+        // Add file.txt
+        let data = b"content";
+        let mut header = tar::Header::new_gnu();
+        header.set_size(data.len() as u64);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append_data(&mut header, "myapp-v1.0/file.txt", &data[..])
+            .unwrap();
+
+        // Add nested file
+        let data = b"nested";
+        let mut header = tar::Header::new_gnu();
+        header.set_size(data.len() as u64);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append_data(&mut header, "myapp-v1.0/subdir/nested.txt", &data[..])
+            .unwrap();
+
+        tar.into_inner().unwrap().finish().unwrap();
+
+        let extract_dir = temp_dir.child("extract");
+        extract_dir.create_dir_all().unwrap();
+
+        unpack(&tar_gz_path, &extract_dir).unwrap();
 
         assert!(extract_dir.join("file.txt").exists());
         assert!(extract_dir.join("subdir/nested.txt").exists());
