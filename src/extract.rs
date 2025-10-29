@@ -260,6 +260,8 @@ fn unpack_tar(
         let mut entry = entry?;
         let entry_path = entry.path()?;
 
+        validate_path(&entry_path)?;
+
         let stripped_path = if let Some(ref root) = common_root {
             entry_path.strip_prefix(root).unwrap_or(&entry_path)
         } else {
@@ -475,6 +477,68 @@ mod tests {
         } else {
             panic!("Expected PathValidation error, got: {result:?}");
         }
+    }
+
+    #[test]
+    fn test_reject_absolute_path_tar() {
+        let temp_dir = tempdir().unwrap();
+        let tar_gz_path = temp_dir.child("evil.tar.gz");
+
+        let file = File::create(&tar_gz_path).unwrap();
+        let encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut tar = tar::Builder::new(encoder);
+
+        let data = b"evil content";
+        let mut header = tar::Header::new_gnu();
+        header.set_size(data.len() as u64);
+        header.set_mode(0o644);
+        let path_bytes = b"/etc/passwd\0";
+        let mut name = [0u8; 100];
+        name[..path_bytes.len()].copy_from_slice(path_bytes);
+        header.as_gnu_mut().unwrap().name = name;
+        header.set_cksum();
+        tar.append(&header, &data[..]).unwrap();
+        tar.into_inner().unwrap().finish().unwrap();
+
+        let extract_dir = temp_dir.child("extract");
+        extract_dir.create_dir_all().unwrap();
+
+        let result = unpack(&tar_gz_path, &extract_dir);
+        assert_matches!(
+            result,
+            Err(ExtractError::PathValidation(msg)) if msg.contains("absolute")
+        );
+    }
+
+    #[test]
+    fn test_reject_parent_traversal_tar() {
+        let temp_dir = tempdir().unwrap();
+        let tar_gz_path = temp_dir.child("evil.tar.gz");
+
+        let file = File::create(&tar_gz_path).unwrap();
+        let encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut tar = tar::Builder::new(encoder);
+
+        let data = b"evil content";
+        let mut header = tar::Header::new_gnu();
+        header.set_size(data.len() as u64);
+        header.set_mode(0o644);
+        let path_bytes = b"../evil\0";
+        let mut name = [0u8; 100];
+        name[..path_bytes.len()].copy_from_slice(path_bytes);
+        header.as_gnu_mut().unwrap().name = name;
+        header.set_cksum();
+        tar.append(&header, &data[..]).unwrap();
+        tar.into_inner().unwrap().finish().unwrap();
+
+        let extract_dir = temp_dir.child("extract");
+        extract_dir.create_dir_all().unwrap();
+
+        let result = unpack(&tar_gz_path, &extract_dir);
+        assert_matches!(
+            result,
+            Err(ExtractError::PathValidation(msg)) if msg.contains("..")
+        );
     }
 
     #[test]
