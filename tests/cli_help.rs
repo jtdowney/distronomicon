@@ -1,8 +1,8 @@
-use assert_cmd::Command;
+use assert_cmd::cargo::cargo_bin_cmd;
 
 #[test]
 fn test_help_output() {
-    let mut cmd = Command::cargo_bin("distronomicon").unwrap();
+    let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd.arg("--help").output().unwrap();
 
     assert!(output.status.success());
@@ -13,7 +13,7 @@ fn test_help_output() {
 
 #[test]
 fn test_check_subcommand_help() {
-    let mut cmd = Command::cargo_bin("distronomicon").unwrap();
+    let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd.arg("check").arg("--help").output().unwrap();
 
     assert!(output.status.success());
@@ -24,7 +24,7 @@ fn test_check_subcommand_help() {
 
 #[test]
 fn test_update_subcommand_help() {
-    let mut cmd = Command::cargo_bin("distronomicon").unwrap();
+    let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd.arg("update").arg("--help").output().unwrap();
 
     assert!(output.status.success());
@@ -35,7 +35,7 @@ fn test_update_subcommand_help() {
 
 #[test]
 fn test_version_subcommand_help() {
-    let mut cmd = Command::cargo_bin("distronomicon").unwrap();
+    let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd.arg("version").arg("--help").output().unwrap();
 
     assert!(output.status.success());
