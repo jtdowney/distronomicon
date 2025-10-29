@@ -152,7 +152,11 @@ fn unpack_zip(
 
         if entry.is_dir() {
             fs::create_dir_all(&dest_path)?;
-        } else {
+        } else if entry.is_symlink() {
+            return Err(ExtractError::PathValidation(
+                "symbolic links are not allowed".to_string(),
+            ));
+        } else if entry.is_file() {
             if file_count >= limits.max_file_count {
                 return Err(ExtractError::LimitExceeded(format!(
                     "file count limit exceeded: {} files",
@@ -204,6 +208,11 @@ fn unpack_zip(
             {
                 set_unix_permissions(&dest_path, mode)?;
             }
+        } else {
+            return Err(ExtractError::PathValidation(format!(
+                "unsupported entry type for: {}",
+                entry.name()
+            )));
         }
     }
 
@@ -274,9 +283,15 @@ fn unpack_tar(
 
         let dest_path = dest_dir.join(stripped_path.to_string_lossy().as_ref());
 
-        if entry.header().entry_type().is_dir() {
+        let entry_type = entry.header().entry_type();
+
+        if entry_type.is_dir() {
             fs::create_dir_all(&dest_path)?;
-        } else if entry.header().entry_type().is_file() {
+        } else if entry_type.is_symlink() {
+            return Err(ExtractError::PathValidation(
+                "symbolic links are not allowed".to_string(),
+            ));
+        } else if entry_type.is_file() {
             if file_count >= limits.max_file_count {
                 return Err(ExtractError::LimitExceeded(format!(
                     "file count limit exceeded: {} files",
@@ -315,6 +330,10 @@ fn unpack_tar(
             if let Ok(mode) = entry.header().mode() {
                 set_unix_permissions(&dest_path, mode)?;
             }
+        } else {
+            return Err(ExtractError::PathValidation(format!(
+                "unsupported entry type: {entry_type:?}"
+            )));
         }
     }
 
@@ -361,11 +380,20 @@ fn ends_with_ignore_case(s: &str, suffix: &str) -> bool {
 /// - Tar with xz (`.tar.xz`, `.txz`)
 /// - Tar with zstd (`.tar.zst`)
 ///
+/// # Security
+///
+/// This function enforces strict security validations:
+/// - Rejects absolute paths and paths containing `..`
+/// - Rejects symbolic links, device files, and named pipes
+/// - Only extracts regular files and directories
+/// - Enforces configurable limits to prevent zip bombs and resource exhaustion
+///
 /// # Errors
 ///
 /// Returns an error if:
 /// - The archive format is unsupported
 /// - An entry path contains `..` or is absolute
+/// - An entry is a symbolic link or other unsupported type (device, pipe, etc.)
 /// - Extraction limits are exceeded (file count, size, decompression ratio)
 /// - I/O operations fail during extraction
 /// - The archive is corrupted or cannot be read
@@ -382,11 +410,20 @@ pub fn unpack(src: impl AsRef<Utf8Path>, dest_dir: impl AsRef<Utf8Path>) -> Resu
 /// - Tar with xz (`.tar.xz`, `.txz`)
 /// - Tar with zstd (`.tar.zst`)
 ///
+/// # Security
+///
+/// This function enforces strict security validations:
+/// - Rejects absolute paths and paths containing `..`
+/// - Rejects symbolic links, device files, and named pipes
+/// - Only extracts regular files and directories
+/// - Enforces configurable limits to prevent zip bombs and resource exhaustion
+///
 /// # Errors
 ///
 /// Returns an error if:
 /// - The archive format is unsupported
 /// - An entry path contains `..` or is absolute
+/// - An entry is a symbolic link or other unsupported type (device, pipe, etc.)
 /// - Extraction limits are exceeded (file count, size, decompression ratio)
 /// - I/O operations fail during extraction
 /// - The archive is corrupted or cannot be read
@@ -538,6 +575,78 @@ mod tests {
         assert_matches!(
             result,
             Err(ExtractError::PathValidation(msg)) if msg.contains("..")
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_reject_symlink_zip() {
+        use std::{os::unix::fs as unix_fs, process::Command};
+
+        let temp_dir = tempdir().unwrap();
+
+        let source_dir = temp_dir.child("source");
+        source_dir.create_dir_all().unwrap();
+        let target_file = source_dir.join("target.txt");
+        fs::write(&target_file, b"target").unwrap();
+        let symlink_path = source_dir.join("symlink");
+        unix_fs::symlink("target.txt", &symlink_path).unwrap();
+
+        let zip_path = temp_dir.child("archive.zip");
+        let output = Command::new("zip")
+            .arg("--symlinks")
+            .arg(zip_path.as_str())
+            .arg("symlink")
+            .current_dir(source_dir.as_str())
+            .output();
+
+        if output.is_err() {
+            eprintln!("Skipping test_reject_symlink_zip: zip command not available");
+            return;
+        }
+
+        let extract_dir = temp_dir.child("extract");
+        extract_dir.create_dir_all().unwrap();
+
+        let result = unpack(&zip_path, &extract_dir);
+        assert_matches!(
+            result,
+            Err(ExtractError::PathValidation(msg)) if msg.contains("symbolic link")
+        );
+    }
+
+    #[test]
+    fn test_reject_symlink_tar() {
+        let temp_dir = tempdir().unwrap();
+        let tar_gz_path = temp_dir.child("evil.tar.gz");
+
+        let file = File::create(&tar_gz_path).unwrap();
+        let encoder = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut tar = tar::Builder::new(encoder);
+
+        let mut header = tar::Header::new_gnu();
+        header.set_entry_type(tar::EntryType::Symlink);
+        header.set_size(0);
+        header.set_mode(0o777);
+        let path_bytes = b"symlink\0";
+        let mut name = [0u8; 100];
+        name[..path_bytes.len()].copy_from_slice(path_bytes);
+        header.as_gnu_mut().unwrap().name = name;
+        let link_bytes = b"../target\0";
+        let mut linkname = [0u8; 100];
+        linkname[..link_bytes.len()].copy_from_slice(link_bytes);
+        header.as_gnu_mut().unwrap().linkname = linkname;
+        header.set_cksum();
+        tar.append(&header, &[][..]).unwrap();
+        tar.into_inner().unwrap().finish().unwrap();
+
+        let extract_dir = temp_dir.child("extract");
+        extract_dir.create_dir_all().unwrap();
+
+        let result = unpack(&tar_gz_path, &extract_dir);
+        assert_matches!(
+            result,
+            Err(ExtractError::PathValidation(msg)) if msg.contains("symbolic link")
         );
     }
 
