@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs::{self, File},
     io::{self, ErrorKind},
     os::unix::fs::PermissionsExt,
@@ -8,6 +9,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use camino_tempfile::Builder;
 use rustix::fs::{CWD, RenameFlags, renameat_with};
 use thiserror::Error;
+use tracing::warn;
 
 #[derive(Debug, Error)]
 pub enum FsOpsError {
@@ -135,6 +137,10 @@ pub fn discover_executables(dir: impl AsRef<Utf8Path>) -> Result<Vec<Utf8PathBuf
 /// root using only their filename. Uses atomic temp+rename pattern for each symlink to
 /// ensure no partial state is visible.
 ///
+/// If multiple executables share the same filename (e.g., `tools/cli` and `bin/cli`),
+/// a warning is logged and the last executable processed will win. The warning includes
+/// all conflicting paths for debugging.
+///
 /// # Errors
 ///
 /// Returns `FsOpsError::Io` if:
@@ -154,6 +160,24 @@ pub fn link_binaries(
         .ok_or_else(|| io::Error::new(ErrorKind::InvalidInput, "release_dir has no filename"))?;
 
     let executables = discover_executables(release_dir)?;
+
+    let collision_map = executables
+        .iter()
+        .filter_map(|path| path.file_name().map(|name| (name, path)))
+        .fold(HashMap::new(), |mut map, (name, path)| {
+            map.entry(name).or_insert_with(Vec::new).push(path);
+            map
+        });
+
+    collision_map
+        .iter()
+        .filter(|(_, paths)| paths.len() > 1)
+        .for_each(|(filename, paths)| {
+            warn!(
+                "duplicate filename \"{}\": {:?}, last will win",
+                filename, paths
+            );
+        });
 
     for rel_path in executables {
         let filename = rel_path
@@ -514,5 +538,32 @@ mod tests {
         assert_eq!(target1.to_str().unwrap(), "../releases/v1.0.0/exe1");
         assert_eq!(target2.to_str().unwrap(), "../releases/v1.0.0/exe2");
         assert_eq!(target3.to_str().unwrap(), "../releases/v1.0.0/bin/helper");
+    }
+
+    #[test]
+    fn link_binaries_last_wins_on_filename_collision() {
+        let root = tempdir().unwrap();
+
+        let releases = root.child("releases");
+        let tag_dir = releases.child("v1.0.0");
+        tag_dir.child("tools").create_dir_all().unwrap();
+        tag_dir.child("bin").create_dir_all().unwrap();
+
+        create_executable(tag_dir.child("tools/cli"), "#!/bin/sh\ntools version");
+        create_executable(tag_dir.child("bin/cli"), "#!/bin/sh\nbin version");
+
+        let bin_dir = root.child("bin");
+        bin_dir.create_dir_all().unwrap();
+
+        link_binaries(&tag_dir, &bin_dir).unwrap();
+
+        let symlink = bin_dir.child("cli");
+        assert!(symlink.exists(), "cli symlink should exist");
+
+        let target = fs::read_link(&symlink).unwrap();
+        assert!(
+            target.to_str().unwrap().contains("bin/cli"),
+            "last executable (bin/cli) should win, got: {target:?}"
+        );
     }
 }
