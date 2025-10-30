@@ -189,12 +189,11 @@ pub fn link_binaries(
         let final_link = bin_dir.join(filename);
 
         std::os::unix::fs::symlink(&target, &temp_link)?;
-
         fs::rename(&temp_link, &final_link)?;
-
-        let bin_file = File::open(bin_dir)?;
-        bin_file.sync_all()?;
     }
+
+    let bin_file = File::open(bin_dir)?;
+    bin_file.sync_all()?;
 
     Ok(())
 }
