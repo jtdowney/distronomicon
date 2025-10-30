@@ -148,7 +148,7 @@ pub async fn fetch_and_verify_checksum(
     if !actual_hex.eq_ignore_ascii_case(expected_hex) {
         return Err(VerifyError::Mismatch {
             filename: asset_filename.to_string(),
-            expected: expected_hex.to_string(),
+            expected: expected_hex.clone(),
             actual: actual_hex,
         });
     }
