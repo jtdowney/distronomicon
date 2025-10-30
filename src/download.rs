@@ -23,31 +23,22 @@ pub type Result<T> = std::result::Result<T, DownloadError>;
 const MAX_RETRIES: u32 = 3;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 
-/// Downloads a file from the specified URL with automatic retry on transient failures.
-///
-/// Streams the response body to a temporary file and ensures data is fsynced before returning.
-/// Uses exponential backoff retry strategy for transient HTTP errors (5xx status codes).
-///
-/// # Timeouts
-///
-/// Requests timeout after 5 minutes (300 seconds) to prevent indefinite hangs on slow or stalled connections.
-/// Adjust `REQUEST_TIMEOUT` constant based on expected file sizes and network conditions.
-///
-/// # Errors
-///
-/// Returns `DownloadError` if:
-/// - The HTTP request fails after all retries
-/// - The request times out
-/// - The server returns a non-success status code
-/// - Writing to the temporary file fails
-/// - Fsyncing the file fails
-pub async fn fetch(url: &str, token: &str) -> Result<NamedUtf8TempFile> {
-    let retry_policy = ExponentialBackoff::builder().build_with_max_retries(MAX_RETRIES);
+#[bon::builder(derive(IntoFuture(Box)))]
+pub async fn fetch(
+    url: &str,
+    token: &str,
+    #[builder(default = MAX_RETRIES)] max_retries: u32,
+    retry_base: Option<u32>,
+    #[builder(default = REQUEST_TIMEOUT)] timeout: Duration,
+) -> Result<NamedUtf8TempFile> {
+    let mut retry_builder = ExponentialBackoff::builder();
+    if let Some(base) = retry_base {
+        retry_builder = retry_builder.base(base);
+    }
+    let retry_policy = retry_builder.build_with_max_retries(max_retries);
     let retry_middleware = RetryTransientMiddleware::new_with_policy(retry_policy);
 
-    let reqwest_client = reqwest::Client::builder()
-        .timeout(REQUEST_TIMEOUT)
-        .build()?;
+    let reqwest_client = reqwest::Client::builder().timeout(timeout).build()?;
     let client: ClientWithMiddleware = ClientBuilder::new(reqwest_client)
         .with(retry_middleware)
         .build();
@@ -103,7 +94,7 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch(&url, "test-token").await;
+        let result = fetch().url(&url).token("test-token").retry_base(1).await;
 
         assert!(result.is_ok());
 
@@ -125,7 +116,7 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch(&url, "test-token").await;
+        let result = fetch().url(&url).token("test-token").await;
 
         assert!(result.is_ok());
 
@@ -149,7 +140,7 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch(&url, test_token).await;
+        let result = fetch().url(&url).token(test_token).await;
 
         assert!(result.is_ok());
 
@@ -167,14 +158,14 @@ mod tests {
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_bytes(b"test data")
-                    .set_delay(Duration::from_secs(2)),
+                    .set_delay(Duration::from_millis(500)),
             )
             .expect(1)
             .mount(&mock_server)
             .await;
 
         let url = format!("{}/slow.tar.gz", mock_server.uri());
-        let result = fetch(&url, "test-token").await;
+        let result = fetch().url(&url).token("test-token").await;
 
         assert!(result.is_ok());
 
@@ -195,7 +186,7 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch(&url, "test-token").await;
+        let result = fetch().url(&url).token("test-token").retry_base(1).await;
 
         assert!(result.is_err());
     }
@@ -212,7 +203,7 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch(&url, "test-token").await;
+        let result = fetch().url(&url).token("test-token").await;
 
         assert!(result.is_err());
     }

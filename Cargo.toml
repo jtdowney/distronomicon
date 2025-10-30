@@ -8,6 +8,7 @@ license = "MIT"
 [dependencies]
 anyhow = "1"
 autocompress = "0.6"
+bon = "3"
 camino = "1"
 camino-tempfile = "1"
 clap = { version = "4", features = ["derive", "env"] }
