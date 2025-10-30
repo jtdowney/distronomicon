@@ -1,4 +1,5 @@
 use assert_cmd::cargo::cargo_bin_cmd;
+use insta::assert_snapshot;
 
 #[test]
 fn test_help_output() {
@@ -8,7 +9,7 @@ fn test_help_output() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    insta::assert_snapshot!(stdout);
+    assert_snapshot!(stdout);
 }
 
 #[test]
@@ -19,7 +20,7 @@ fn test_check_subcommand_help() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    insta::assert_snapshot!(stdout);
+    assert_snapshot!(stdout);
 }
 
 #[test]
@@ -30,7 +31,7 @@ fn test_update_subcommand_help() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    insta::assert_snapshot!(stdout);
+    assert_snapshot!(stdout);
 }
 
 #[test]
@@ -41,5 +42,5 @@ fn test_version_subcommand_help() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    insta::assert_snapshot!(stdout);
+    assert_snapshot!(stdout);
 }
