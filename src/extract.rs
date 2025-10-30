@@ -1,6 +1,7 @@
 use std::{
     fs,
     io::{self, Read},
+    os::unix::fs::PermissionsExt,
     path::{Component, Path},
 };
 
@@ -84,9 +85,7 @@ impl<R: Read> Read for LimitedReader<R> {
     }
 }
 
-#[cfg(unix)]
 fn set_unix_permissions(path: impl AsRef<Utf8Path>, mode: u32) -> Result<()> {
-    use std::{fs, os::unix::fs::PermissionsExt};
     let permissions = fs::Permissions::from_mode(mode);
     fs::set_permissions(path.as_ref(), permissions)?;
     Ok(())
@@ -198,7 +197,6 @@ fn unpack_zip(
             total_bytes += limited_reader.bytes_read();
             file_count += 1;
 
-            #[cfg(unix)]
             if let Some(mode) = entry.unix_mode()
                 && mode & 0o111 != 0
             {
@@ -322,7 +320,6 @@ fn unpack_tar(
             total_bytes += limited_reader.bytes_read();
             file_count += 1;
 
-            #[cfg(unix)]
             if let Ok(mode) = entry.header().mode() {
                 set_unix_permissions(&dest_path, mode)?;
             }
@@ -575,7 +572,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(unix)]
     fn test_reject_symlink_zip() {
         use std::{os::unix::fs as unix_fs, process::Command};
 
