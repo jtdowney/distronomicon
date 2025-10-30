@@ -166,10 +166,10 @@ pub fn link_binaries(
 
         std::os::unix::fs::symlink(&target, &temp_link)?;
 
+        fs::rename(&temp_link, &final_link)?;
+
         let bin_file = File::open(bin_dir)?;
         bin_file.sync_all()?;
-
-        fs::rename(&temp_link, &final_link)?;
     }
 
     Ok(())
