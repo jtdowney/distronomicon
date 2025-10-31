@@ -138,21 +138,21 @@ async fn update_happy_path_with_checksum() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
+        .arg("--install-root")
+        .arg(install_root.as_str())
+        .arg("update")
+        .arg("--repo")
+        .arg("owner/repo")
         .arg("--pattern")
         .arg("myapp-.*\\.tar\\.gz")
         .arg("--checksum-pattern")
         .arg("SHA256SUMS")
         .arg("--state-directory")
         .arg(state_dir.as_str())
-        .arg("--install-root")
-        .arg(install_root.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("update")
         .output()
         .unwrap();
 
@@ -230,19 +230,19 @@ async fn update_no_matching_asset() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
+        .arg("--install-root")
+        .arg(install_root.as_str())
+        .arg("update")
+        .arg("--repo")
+        .arg("owner/repo")
         .arg("--pattern")
         .arg("myapp-.*\\.tar\\.gz")
         .arg("--state-directory")
         .arg(state_dir.as_str())
-        .arg("--install-root")
-        .arg(install_root.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("update")
         .output()
         .unwrap();
 
@@ -327,21 +327,21 @@ async fn update_checksum_mismatch() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
+        .arg("--install-root")
+        .arg(install_root.as_str())
+        .arg("update")
+        .arg("--repo")
+        .arg("owner/repo")
         .arg("--pattern")
         .arg("myapp-.*\\.tar\\.gz")
         .arg("--checksum-pattern")
         .arg("SHA256SUMS")
         .arg("--state-directory")
         .arg(state_dir.as_str())
-        .arg("--install-root")
-        .arg(install_root.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("update")
         .output()
         .unwrap();
 
@@ -412,10 +412,13 @@ async fn update_restart_command_failure() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
+        .arg("--install-root")
+        .arg(install_root.as_str())
+        .arg("update")
+        .arg("--repo")
+        .arg("owner/repo")
         .arg("--pattern")
         .arg("myapp-.*\\.tar\\.gz")
         .arg("--skip-verification")
@@ -423,11 +426,8 @@ async fn update_restart_command_failure() {
         .arg("false") // Command that always fails
         .arg("--state-directory")
         .arg(state_dir.as_str())
-        .arg("--install-root")
-        .arg(install_root.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("update")
         .output()
         .unwrap();
 
@@ -482,19 +482,19 @@ async fn update_already_up_to_date() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
+        .arg("--install-root")
+        .arg(install_root.as_str())
+        .arg("update")
+        .arg("--repo")
+        .arg("owner/repo")
         .arg("--pattern")
         .arg("myapp-.*\\.tar\\.gz")
         .arg("--state-directory")
         .arg(state_dir.as_str())
-        .arg("--install-root")
-        .arg(install_root.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("update")
         .output()
         .unwrap();
 
@@ -558,20 +558,20 @@ async fn update_skip_verification() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
+        .arg("--install-root")
+        .arg(install_root.as_str())
+        .arg("update")
+        .arg("--repo")
+        .arg("owner/repo")
         .arg("--pattern")
         .arg("myapp-.*\\.tar\\.gz")
         .arg("--skip-verification")
         .arg("--state-directory")
         .arg(state_dir.as_str())
-        .arg("--install-root")
-        .arg(install_root.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("update")
         .output()
         .unwrap();
 

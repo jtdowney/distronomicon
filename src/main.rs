@@ -14,7 +14,7 @@ use regex::Regex;
 use tracing::{Level, info, trace, warn};
 use tracing_subscriber::FmtSubscriber;
 
-use crate::cli::{Args, Commands};
+use crate::cli::{Args, Commands, UpdateArgs};
 
 mod cli;
 
@@ -147,23 +147,13 @@ fn finalize_update(
     Ok(())
 }
 
-async fn handle_update(args: &Args) -> anyhow::Result<()> {
-    let repo = args
-        .repo
-        .as_ref()
-        .ok_or_else(|| anyhow!("--repo is required"))?;
-    let pattern = args
-        .pattern
-        .as_ref()
-        .ok_or_else(|| anyhow!("--pattern is required"))?;
-    let state_directory = args
-        .state_directory
-        .as_ref()
-        .ok_or_else(|| anyhow!("--state-directory is required"))?;
-
+async fn handle_update(args: &Args, update_args: &UpdateArgs) -> anyhow::Result<()> {
     let _lock = lock::acquire(&args.app, None)?;
 
-    let state_path = state_directory.join(&args.app).join("state.json");
+    let state_path = update_args
+        .state_directory
+        .join(&args.app)
+        .join("state.json");
     let existing_state = state::load(&state_path)?;
 
     let validators = existing_state.as_ref().map_or_else(
@@ -178,10 +168,10 @@ async fn handle_update(args: &Args) -> anyhow::Result<()> {
     );
 
     let (release_opt, validators_out, was_modified) = github::fetch_latest(
-        repo,
-        args.github_token.as_deref(),
-        Some(&args.github_host),
-        args.allow_prerelease,
+        &update_args.repo,
+        update_args.github_token.as_deref(),
+        Some(&update_args.github_host),
+        update_args.allow_prerelease,
         &validators,
     )
     .await?;
@@ -205,8 +195,8 @@ async fn handle_update(args: &Args) -> anyhow::Result<()> {
 
     info!("Updating to {tag}");
 
-    let asset_pattern = Regex::new(pattern)?;
-    let checksum_pattern = args
+    let asset_pattern = Regex::new(&update_args.pattern)?;
+    let checksum_pattern = update_args
         .checksum_pattern
         .as_ref()
         .map(|p| Regex::new(p))
@@ -216,8 +206,8 @@ async fn handle_update(args: &Args) -> anyhow::Result<()> {
         &release,
         &asset_pattern,
         checksum_pattern.as_ref(),
-        args.github_token.as_deref(),
-        args.skip_verification,
+        update_args.github_token.as_deref(),
+        update_args.skip_verification,
     )
     .await?;
 
@@ -235,8 +225,8 @@ async fn handle_update(args: &Args) -> anyhow::Result<()> {
         &state_path,
         tag,
         &validators_out,
-        args.restart_command.as_deref(),
-        args.retain as usize,
+        update_args.restart_command.as_deref(),
+        update_args.retain as usize,
     )?;
 
     println!("Successfully updated to {tag}");
@@ -256,18 +246,12 @@ async fn main() -> anyhow::Result<()> {
     let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
-    match args.command {
-        Commands::Check => {
-            let repo = args
-                .repo
-                .as_ref()
-                .ok_or_else(|| anyhow!("--repo is required for check command"))?;
-            let state_directory = args
+    match &args.command {
+        Commands::Check(check_args) => {
+            let state_path = check_args
                 .state_directory
-                .as_ref()
-                .ok_or_else(|| anyhow!("--state-directory is required for check command"))?;
-
-            let state_path = state_directory.join(&args.app).join("state.json");
+                .join(&args.app)
+                .join("state.json");
             let existing_state = state::load(&state_path)?;
 
             let validators = if let Some(state) = existing_state.as_ref() {
@@ -283,10 +267,10 @@ async fn main() -> anyhow::Result<()> {
             };
 
             let (release_opt, validators_out, _was_modified) = github::fetch_latest(
-                repo,
-                args.github_token.as_deref(),
-                Some(&args.github_host),
-                args.allow_prerelease,
+                &check_args.repo,
+                check_args.github_token.as_deref(),
+                Some(&check_args.github_host),
+                check_args.allow_prerelease,
                 &validators,
             )
             .await?;
@@ -331,18 +315,8 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        Commands::Update => {
-            args.repo
-                .as_ref()
-                .ok_or_else(|| anyhow!("--repo is required for update command"))?;
-            args.pattern
-                .as_ref()
-                .ok_or_else(|| anyhow!("--pattern is required for update command"))?;
-            args.state_directory
-                .as_ref()
-                .ok_or_else(|| anyhow!("--state-directory is required for update command"))?;
-
-            handle_update(&args).await?;
+        Commands::Update(update_args) => {
+            handle_update(&args, update_args).await?;
         }
         Commands::Version => {
             trace!("Subcommand: version");
