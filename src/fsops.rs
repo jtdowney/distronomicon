@@ -207,7 +207,7 @@ pub fn link_binaries(
 ///
 /// * `releases_dir` - Path to the releases directory containing versioned subdirectories
 /// * `current_tag` - The currently active release tag (will never be deleted)
-/// * `retain` - Number of recent releases to keep (excluding current if it's old)
+/// * `retain` - Number of recent releases to keep. The current release is always preserved even if it falls outside this count.
 ///
 /// # Returns
 ///
