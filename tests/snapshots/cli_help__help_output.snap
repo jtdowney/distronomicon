@@ -2,7 +2,7 @@
 source: tests/cli_help.rs
 expression: stdout
 ---
-Usage: distronomicon [OPTIONS] --repo <REPO> --app <APP> --pattern <PATTERN> --state-directory <STATE_DIRECTORY> <COMMAND>
+Usage: distronomicon [OPTIONS] --app <APP> <COMMAND>
 
 Commands:
   check    Check for updates without installing

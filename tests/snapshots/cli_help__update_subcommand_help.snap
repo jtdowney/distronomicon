@@ -4,7 +4,7 @@ expression: stdout
 ---
 Update to the latest release
 
-Usage: distronomicon --repo <REPO> --app <APP> --pattern <PATTERN> --state-directory <STATE_DIRECTORY> update
+Usage: distronomicon --app <APP> update
 
 Options:
   -h, --help  Print help

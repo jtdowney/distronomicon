@@ -23,13 +23,13 @@ fn validate_app_name(s: &str) -> Result<String, String> {
 #[derive(Parser, Debug)]
 pub struct Args {
     #[arg(long, help = "GitHub repository (owner/name)")]
-    pub repo: String,
+    pub repo: Option<String>,
 
     #[arg(long, value_parser = validate_app_name, help = "Application name")]
     pub app: String,
 
     #[arg(long, help = "Asset filename pattern (regex)")]
-    pub pattern: String,
+    pub pattern: Option<String>,
 
     #[arg(long, help = "Checksum filename pattern (optional)")]
     pub checksum_pattern: Option<String>,
@@ -63,7 +63,7 @@ pub struct Args {
     pub skip_verification: bool,
 
     #[arg(long, env = "STATE_DIRECTORY", help = "State directory")]
-    pub state_directory: Utf8PathBuf,
+    pub state_directory: Option<Utf8PathBuf>,
 
     #[arg(
         long,
@@ -129,9 +129,9 @@ mod tests {
         assert!(args.is_ok(), "Failed to parse args: {:?}", args.err());
         let args = args.unwrap();
 
-        assert_eq!(args.repo, "owner/name");
+        assert_eq!(args.repo, Some("owner/name".to_string()));
         assert_eq!(args.app, "myapp");
-        assert_eq!(args.pattern, ".*\\.tar\\.gz");
+        assert_eq!(args.pattern, Some(".*\\.tar\\.gz".to_string()));
         assert_eq!(args.checksum_pattern.as_deref(), Some("SHA256SUMS"));
         assert!(args.allow_prerelease);
         assert_eq!(args.github_token.as_deref(), Some("ghp_test123"));
@@ -142,7 +142,10 @@ mod tests {
         );
         assert_eq!(args.retain, 5);
         assert!(args.skip_verification);
-        assert_eq!(args.state_directory, Utf8PathBuf::from("/custom/state"));
+        assert_eq!(
+            args.state_directory,
+            Some(Utf8PathBuf::from("/custom/state"))
+        );
         assert_eq!(args.install_root, Utf8PathBuf::from("/custom/opt/myapp"));
         assert_eq!(args.verbose, 2);
 
@@ -177,7 +180,7 @@ mod tests {
         assert!(args.restart_command.is_none());
         assert_eq!(
             args.state_directory,
-            Utf8PathBuf::from("/var/lib/distronomicon/myapp")
+            Some(Utf8PathBuf::from("/var/lib/distronomicon/myapp"))
         );
         assert_eq!(args.install_root, Utf8PathBuf::from("/opt"));
 
