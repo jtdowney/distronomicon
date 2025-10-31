@@ -75,12 +75,7 @@ async fn check_with_304_not_modified() {
         .output()
         .unwrap();
 
-    assert!(
-        output.status.success(),
-        "Expected success, got status: {:?}\nstderr: {}",
-        output.status,
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert_eq!(output.status.code(), Some(0));
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     insta::assert_snapshot!(stdout);
@@ -135,12 +130,7 @@ async fn check_with_update_available() {
         .output()
         .unwrap();
 
-    assert!(
-        output.status.success(),
-        "Expected success, got status: {:?}\nstderr: {}",
-        output.status,
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert_eq!(output.status.code(), Some(0));
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     insta::assert_snapshot!(stdout);
@@ -192,12 +182,7 @@ async fn check_no_current_version() {
         .output()
         .unwrap();
 
-    assert!(
-        output.status.success(),
-        "Expected success, got status: {:?}\nstderr: {}",
-        output.status,
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert_eq!(output.status.code(), Some(0));
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     insta::assert_snapshot!(stdout);
@@ -233,17 +218,7 @@ async fn check_network_error_exits_1() {
         .output()
         .unwrap();
 
-    assert!(
-        !output.status.success(),
-        "Expected failure (exit code 1), got status: {:?}",
-        output.status
-    );
-    assert_eq!(
-        output.status.code(),
-        Some(1),
-        "Expected exit code 1, got: {:?}",
-        output.status.code()
-    );
+    assert_eq!(output.status.code(), Some(1));
 }
 
 #[tokio::test]
@@ -292,12 +267,7 @@ async fn check_first_run_no_state() {
         .output()
         .unwrap();
 
-    assert!(
-        output.status.success(),
-        "Expected success, got status: {:?}\nstderr: {}",
-        output.status,
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert_eq!(output.status.code(), Some(0));
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     insta::assert_snapshot!(stdout);
@@ -346,12 +316,7 @@ async fn state_validators_updated_on_304() {
         .output()
         .unwrap();
 
-    assert!(
-        output.status.success(),
-        "Expected success, got status: {:?}\nstderr: {}",
-        output.status,
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert_eq!(output.status.code(), Some(0));
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     insta::assert_snapshot!(stdout);

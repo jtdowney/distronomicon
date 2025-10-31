@@ -11,7 +11,7 @@ use distronomicon::{
 };
 use jiff::Timestamp;
 use regex::Regex;
-use tracing::{Level, info, trace, warn};
+use tracing::{Level, info, info_span, trace, warn};
 use tracing_subscriber::FmtSubscriber;
 
 use crate::cli::{Args, Commands, UpdateArgs};
@@ -51,15 +51,19 @@ async fn download_and_verify_asset(
         .ok_or_else(|| anyhow!("No asset matching pattern"))?;
     info!("Selected asset: {}", asset.name);
 
-    let downloaded_file = download::fetch()
-        .url(&asset.browser_download_url)
-        .token(github_token.unwrap_or(""))
-        .call()
-        .await?;
+    let downloaded_file = {
+        let _span = info_span!("download", url = %asset.browser_download_url).entered();
+        download::fetch()
+            .url(&asset.browser_download_url)
+            .token(github_token.unwrap_or(""))
+            .call()
+            .await?
+    };
 
     if let Some(checksum_regex) = checksum_pattern
         && !skip_verification
     {
+        let _span = info_span!("verify", asset = %asset.name).entered();
         let checksum_asset = github::select_asset(&release.assets, checksum_regex)
             .ok_or_else(|| anyhow!("No checksum asset matching pattern"))?;
         verify::fetch_and_verify_checksum(
@@ -84,18 +88,24 @@ fn install_release(
 ) -> anyhow::Result<()> {
     let staging_dir = fsops::make_staging(install_root, app, tag)?;
 
-    let temp_with_ext = staging_dir.join(asset_name);
-    fs::copy(downloaded_file.path(), &temp_with_ext)?;
-    extract::unpack(&temp_with_ext, &staging_dir)?;
-    fs::remove_file(&temp_with_ext)?;
+    {
+        let _span = info_span!("extract", archive = %asset_name, dest = %staging_dir).entered();
+        let temp_with_ext = staging_dir.join(asset_name);
+        fs::copy(downloaded_file.path(), &temp_with_ext)?;
+        extract::unpack(&temp_with_ext, &staging_dir)?;
+        fs::remove_file(&temp_with_ext)?;
+    }
 
     let releases_dir = install_root.join(app).join("releases");
     let installed_dir = fsops::atomic_move(&staging_dir, &releases_dir, tag)?;
 
-    let bin_dir = install_root.join(app).join("bin");
-    fs::create_dir_all(&bin_dir)?;
-    fsops::link_binaries(&installed_dir, &bin_dir)?;
-    info!("Symlinks updated");
+    {
+        let _span = info_span!("switch", tag = %tag).entered();
+        let bin_dir = install_root.join(app).join("bin");
+        fs::create_dir_all(&bin_dir)?;
+        fsops::link_binaries(&installed_dir, &bin_dir)?;
+        info!("Symlinks updated");
+    }
 
     Ok(())
 }
@@ -110,6 +120,7 @@ fn finalize_update(
 ) -> anyhow::Result<()> {
     let mut restart_failed = false;
     if let Some(cmd) = restart_cmd {
+        let _span = info_span!("restart", command = %cmd).entered();
         match restart::execute(cmd) {
             Ok(()) => {
                 info!("Restart command succeeded");
@@ -121,9 +132,12 @@ fn finalize_update(
         }
     }
 
-    let deleted = fsops::prune_old_releases(releases_dir, tag, retain)?;
-    if !deleted.is_empty() {
-        info!("Pruned {} old release(s): {:?}", deleted.len(), deleted);
+    {
+        let _span = info_span!("prune", retain = %retain).entered();
+        let deleted = fsops::prune_old_releases(releases_dir, tag, retain)?;
+        if !deleted.is_empty() {
+            info!("Pruned {} old release(s): {:?}", deleted.len(), deleted);
+        }
     }
 
     let now = Timestamp::now();
@@ -148,6 +162,7 @@ fn finalize_update(
 }
 
 async fn handle_update(args: &Args, update_args: &UpdateArgs) -> anyhow::Result<()> {
+    let _span = info_span!("update", app = %args.app, repo = %update_args.repo).entered();
     let _lock = lock::acquire(&args.app, None)?;
 
     let state_path = update_args

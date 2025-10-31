@@ -4,7 +4,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum RestartError {
-    #[error("command '{command}' failed with exit code {code}\nstdout: {stdout}\nstderr: {stderr}")]
+    #[error("command '{command}' failed with exit code {code}")]
     CommandFailed {
         command: String,
         code: i32,
@@ -24,7 +24,8 @@ pub type Result<T> = std::result::Result<T, RestartError>;
 /// # Errors
 ///
 /// Returns `RestartError::CommandFailed` if the command exits with a non-zero status code.
-/// The error includes the exit code, stdout, stderr, and the command string.
+/// The error includes the command and exit code. Stdout and stderr are captured in the error
+/// struct for debugging but not shown in the error message.
 ///
 /// Returns `RestartError::Io` if the command cannot be executed (e.g., `/bin/sh` not found).
 pub fn execute(cmd: &str) -> Result<()> {
@@ -95,6 +96,32 @@ mod tests {
         assert_matches!(
             result,
             Err(RestartError::CommandFailed { ref command, code: 42, .. }) if command == cmd
+        );
+    }
+
+    #[test]
+    fn test_error_display_is_single_line() {
+        let error = RestartError::CommandFailed {
+            command: "systemctl restart myapp".to_string(),
+            code: 1,
+            stdout: "Some output".to_string(),
+            stderr: "Permission denied".to_string(),
+        };
+
+        let display = format!("{error}");
+
+        // Error should be single-line and actionable
+        assert!(
+            !display.contains('\n'),
+            "Error Display should be single-line but got: {display}"
+        );
+        assert!(
+            display.contains("systemctl restart myapp"),
+            "Error should mention the command"
+        );
+        assert!(
+            display.contains("exit code 1"),
+            "Error should mention exit code"
         );
     }
 }

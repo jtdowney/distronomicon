@@ -2,7 +2,7 @@
 source: tests/cli_help.rs
 expression: stdout
 ---
-Show currently installed version
+Show currently installed version (derived from symlinks in bin directory)
 
 Usage: distronomicon --app <APP> version
 

@@ -156,12 +156,7 @@ async fn update_happy_path_with_checksum() {
         .output()
         .unwrap();
 
-    assert!(
-        output.status.success(),
-        "Expected success, got status: {:?}\nstderr: {}",
-        output.status,
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert_eq!(output.status.code(), Some(0));
 
     // Verify new version installed
     let new_release_dir = install_root.join("myapp").join("releases").join("v1.1.0");
@@ -246,11 +241,6 @@ async fn update_no_matching_asset() {
         .output()
         .unwrap();
 
-    assert!(
-        !output.status.success(),
-        "Expected failure, got status: {:?}",
-        output.status
-    );
     assert_eq!(output.status.code(), Some(1));
 
     // Verify old version still in place
@@ -575,12 +565,7 @@ async fn update_skip_verification() {
         .output()
         .unwrap();
 
-    assert!(
-        output.status.success(),
-        "Expected success, got status: {:?}\nstderr: {}",
-        output.status,
-        String::from_utf8_lossy(&output.stderr)
-    );
+    assert_eq!(output.status.code(), Some(0));
 
     // Verify installation succeeded without checksum
     let new_release_dir = install_root.join("myapp").join("releases").join("v1.1.0");
