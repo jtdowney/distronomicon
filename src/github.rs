@@ -7,6 +7,8 @@ use reqwest::{
 };
 use serde::Deserialize;
 
+const DEFAULT_GITHUB_HOST: &str = "https://api.github.com";
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct Release {
     pub tag_name: String,
@@ -49,18 +51,18 @@ pub struct ValidatorsOut {
 /// - Network request fails
 /// - Response cannot be parsed as JSON
 /// - No releases are found when `allow_prerelease` is true
+#[bon::builder(derive(IntoFuture(Box)))]
 pub async fn fetch_latest(
     repo: &str,
     token: Option<&str>,
-    host: Option<&str>,
-    allow_prerelease: bool,
-    validators_in: &Validators,
+    #[builder(default = DEFAULT_GITHUB_HOST)] host: &str,
+    #[builder(default = false)] allow_prerelease: bool,
+    #[builder(default)] validators: Validators,
 ) -> Result<(Option<Release>, ValidatorsOut, bool)> {
-    let base_url = host.unwrap_or("https://api.github.com");
     let url = if allow_prerelease {
-        format!("{base_url}/repos/{repo}/releases")
+        format!("{host}/repos/{repo}/releases")
     } else {
-        format!("{base_url}/repos/{repo}/releases/latest")
+        format!("{host}/repos/{repo}/releases/latest")
     };
 
     let client = reqwest::Client::builder()
@@ -76,10 +78,10 @@ pub async fn fetch_latest(
         request = request.header(AUTHORIZATION, format!("Bearer {token}"));
     }
 
-    if let Some(etag) = &validators_in.etag {
+    if let Some(etag) = &validators.etag {
         request = request.header(IF_NONE_MATCH, etag);
     }
-    if let Some(last_modified) = &validators_in.last_modified {
+    if let Some(last_modified) = &validators.last_modified {
         request = request.header(IF_MODIFIED_SINCE, last_modified);
     }
 
@@ -159,15 +161,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let validators = Validators::default();
-        let result = fetch_latest(
-            "owner/repo",
-            None,
-            Some(&mock_server.uri()),
-            false,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .host(&mock_server.uri())
+            .await;
 
         assert!(result.is_ok());
         let (release_opt, validators_out, was_modified) = result.unwrap();
@@ -207,14 +204,11 @@ mod tests {
             last_modified: Some("Mon, 27 Oct 2025 12:00:00 GMT".to_string()),
         };
 
-        let result = fetch_latest(
-            "owner/repo",
-            None,
-            Some(&mock_server.uri()),
-            false,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .host(&mock_server.uri())
+            .validators(validators)
+            .await;
 
         assert!(result.is_ok());
         let (release_opt, validators_out, was_modified) = result.unwrap();
@@ -252,14 +246,11 @@ mod tests {
             last_modified: Some("Wed, 21 Oct 2015 07:28:00 GMT".to_string()),
         };
 
-        let result = fetch_latest(
-            "owner/repo",
-            None,
-            Some(&mock_server.uri()),
-            false,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .host(&mock_server.uri())
+            .validators(validators)
+            .await;
 
         assert!(result.is_ok());
     }
@@ -305,15 +296,11 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let validators = Validators::default();
-        let result = fetch_latest(
-            "owner/repo",
-            None,
-            Some(&mock_server.uri()),
-            true,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .host(&mock_server.uri())
+            .allow_prerelease(true)
+            .await;
 
         assert!(result.is_ok());
         let (release_opt, validators_out, was_modified) = result.unwrap();
@@ -346,15 +333,11 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let validators = Validators::default();
-        let result = fetch_latest(
-            "owner/repo",
-            Some("secret-token"),
-            Some(&mock_server.uri()),
-            false,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .token("secret-token")
+            .host(&mock_server.uri())
+            .await;
 
         assert!(result.is_ok());
         let (release_opt, _, _) = result.unwrap();
@@ -378,15 +361,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let validators = Validators::default();
-        let result = fetch_latest(
-            "owner/repo",
-            None,
-            Some(&mock_server.uri()),
-            false,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .host(&mock_server.uri())
+            .await;
 
         assert!(result.is_ok());
     }
@@ -434,15 +412,11 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let validators = Validators::default();
-        let result = fetch_latest(
-            "owner/repo",
-            None,
-            Some(&mock_server.uri()),
-            true,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .host(&mock_server.uri())
+            .allow_prerelease(true)
+            .await;
 
         assert!(result.is_ok());
         let (release_opt, _, _) = result.unwrap();
@@ -464,15 +438,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let validators = Validators::default();
-        let result = fetch_latest(
-            "owner/repo",
-            None,
-            Some(&mock_server.uri()),
-            false,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .host(&mock_server.uri())
+            .await;
 
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -489,15 +458,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let validators = Validators::default();
-        let result = fetch_latest(
-            "owner/repo",
-            None,
-            Some(&mock_server.uri()),
-            false,
-            &validators,
-        )
-        .await;
+        let result = fetch_latest()
+            .repo("owner/repo")
+            .host(&mock_server.uri())
+            .await;
 
         assert!(result.is_err());
         let err = result.unwrap_err();

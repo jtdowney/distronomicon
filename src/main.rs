@@ -167,14 +167,13 @@ async fn handle_update(args: &Args, update_args: &UpdateArgs) -> anyhow::Result<
         },
     );
 
-    let (release_opt, validators_out, was_modified) = github::fetch_latest(
-        &update_args.repo,
-        update_args.github.token.as_deref(),
-        Some(&update_args.github.host),
-        update_args.github.allow_prerelease,
-        &validators,
-    )
-    .await?;
+    let (release_opt, validators_out, was_modified) = github::fetch_latest()
+        .repo(&update_args.repo)
+        .maybe_token(update_args.github.token.as_deref())
+        .host(&update_args.github.host)
+        .allow_prerelease(update_args.github.allow_prerelease)
+        .validators(validators)
+        .await?;
 
     let current_tag = version::current_tag(&args.install_root, &args.app)?;
 
@@ -266,14 +265,13 @@ async fn main() -> anyhow::Result<()> {
                 }
             };
 
-            let (release_opt, validators_out, _was_modified) = github::fetch_latest(
-                &check_args.repo,
-                check_args.github.token.as_deref(),
-                Some(&check_args.github.host),
-                check_args.github.allow_prerelease,
-                &validators,
-            )
-            .await?;
+            let (release_opt, validators_out, _was_modified) = github::fetch_latest()
+                .repo(&check_args.repo)
+                .maybe_token(check_args.github.token.as_deref())
+                .host(&check_args.github.host)
+                .allow_prerelease(check_args.github.allow_prerelease)
+                .validators(validators)
+                .await?;
 
             let current_tag = version::current_tag(&args.install_root, &args.app)?;
 
