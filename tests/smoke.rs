@@ -167,7 +167,7 @@ async fn update_then_version_then_noop_update() {
     let symlink_path = install_root.join("testapp").join("bin").join("testapp");
     assert!(symlink_path.exists());
     let link_target = fs::read_link(&symlink_path).unwrap();
-    assert!(link_target.to_string_lossy().contains("v1.0.0"));
+    assert!(link_target.ends_with("releases/v1.0.0/testapp"));
 
     let state_path = state_dir.join("testapp").join("state.json");
     let state_contents = fs::read_to_string(&state_path).unwrap();
