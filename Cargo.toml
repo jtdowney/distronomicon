@@ -1,6 +1,7 @@
 [package]
 name = "distronomicon"
 description = "GitHub release updater for Linux binaries"
+repository = "https://github.com/jtdowney/distronomicon"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
@@ -40,3 +41,10 @@ insta = "1"
 wiremock = "0.6"
 xz2 = "0.1"
 zstd = "0.13"
+
+[profile.release]
+opt-level = 3
+debug = "line-tables-only"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
