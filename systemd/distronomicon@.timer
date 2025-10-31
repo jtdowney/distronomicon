@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for %i updates daily
+Requires=distronomicon@%i.service
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=2h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
