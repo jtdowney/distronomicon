@@ -169,9 +169,9 @@ async fn handle_update(args: &Args, update_args: &UpdateArgs) -> anyhow::Result<
 
     let (release_opt, validators_out, was_modified) = github::fetch_latest(
         &update_args.repo,
-        update_args.github_token.as_deref(),
-        Some(&update_args.github_host),
-        update_args.allow_prerelease,
+        update_args.github.token.as_deref(),
+        Some(&update_args.github.host),
+        update_args.github.allow_prerelease,
         &validators,
     )
     .await?;
@@ -206,7 +206,7 @@ async fn handle_update(args: &Args, update_args: &UpdateArgs) -> anyhow::Result<
         &release,
         &asset_pattern,
         checksum_pattern.as_ref(),
-        update_args.github_token.as_deref(),
+        update_args.github.token.as_deref(),
         update_args.skip_verification,
     )
     .await?;
@@ -268,9 +268,9 @@ async fn main() -> anyhow::Result<()> {
 
             let (release_opt, validators_out, _was_modified) = github::fetch_latest(
                 &check_args.repo,
-                check_args.github_token.as_deref(),
-                Some(&check_args.github_host),
-                check_args.allow_prerelease,
+                check_args.github.token.as_deref(),
+                Some(&check_args.github.host),
+                check_args.github.allow_prerelease,
                 &validators,
             )
             .await?;

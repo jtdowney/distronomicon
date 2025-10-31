@@ -15,9 +15,9 @@ Options:
           State directory [env: STATE_DIRECTORY=]
       --checksum-pattern <CHECKSUM_PATTERN>
           Checksum filename pattern (optional)
-      --github-token <GITHUB_TOKEN>
+      --github-token <TOKEN>
           GitHub API token [env: GITHUB_TOKEN]
-      --github-host <GITHUB_HOST>
+      --github-host <HOST>
           GitHub API host [env: GITHUB_HOST=] [default: api.github.com]
       --allow-prerelease
           Allow prerelease versions

@@ -53,6 +53,28 @@ pub enum Commands {
 }
 
 #[derive(Parser, Debug)]
+pub struct GitHubConfig {
+    #[arg(
+        long = "github-token",
+        env = "GITHUB_TOKEN",
+        hide_env_values = true,
+        help = "GitHub API token"
+    )]
+    pub token: Option<String>,
+
+    #[arg(
+        long = "github-host",
+        env = "GITHUB_HOST",
+        default_value = "api.github.com",
+        help = "GitHub API host"
+    )]
+    pub host: String,
+
+    #[arg(long = "allow-prerelease", help = "Allow prerelease versions")]
+    pub allow_prerelease: bool,
+}
+
+#[derive(Parser, Debug)]
 pub struct CheckArgs {
     #[arg(long, help = "GitHub repository (owner/name)")]
     pub repo: String,
@@ -60,24 +82,8 @@ pub struct CheckArgs {
     #[arg(long, env = "STATE_DIRECTORY", help = "State directory")]
     pub state_directory: Utf8PathBuf,
 
-    #[arg(
-        long,
-        env = "GITHUB_TOKEN",
-        hide_env_values = true,
-        help = "GitHub API token"
-    )]
-    pub github_token: Option<String>,
-
-    #[arg(
-        long,
-        env = "GITHUB_HOST",
-        default_value = "api.github.com",
-        help = "GitHub API host"
-    )]
-    pub github_host: String,
-
-    #[arg(long, help = "Allow prerelease versions")]
-    pub allow_prerelease: bool,
+    #[command(flatten)]
+    pub github: GitHubConfig,
 }
 
 #[derive(Parser, Debug)]
@@ -94,24 +100,8 @@ pub struct UpdateArgs {
     #[arg(long, help = "Checksum filename pattern (optional)")]
     pub checksum_pattern: Option<String>,
 
-    #[arg(
-        long,
-        env = "GITHUB_TOKEN",
-        hide_env_values = true,
-        help = "GitHub API token"
-    )]
-    pub github_token: Option<String>,
-
-    #[arg(
-        long,
-        env = "GITHUB_HOST",
-        default_value = "api.github.com",
-        help = "GitHub API host"
-    )]
-    pub github_host: String,
-
-    #[arg(long, help = "Allow prerelease versions")]
-    pub allow_prerelease: bool,
+    #[command(flatten)]
+    pub github: GitHubConfig,
 
     #[arg(long, help = "Command to run after successful update")]
     pub restart_command: Option<String>,
@@ -172,9 +162,9 @@ mod tests {
                 Utf8PathBuf::from("/custom/state")
             );
             assert_eq!(update_args.checksum_pattern.as_deref(), Some("SHA256SUMS"));
-            assert_eq!(update_args.github_token.as_deref(), Some("ghp_test123"));
-            assert_eq!(update_args.github_host, "github.example.com");
-            assert!(update_args.allow_prerelease);
+            assert_eq!(update_args.github.token.as_deref(), Some("ghp_test123"));
+            assert_eq!(update_args.github.host, "github.example.com");
+            assert!(update_args.github.allow_prerelease);
             assert_eq!(
                 update_args.restart_command.as_deref(),
                 Some("systemctl restart myapp")
@@ -212,9 +202,9 @@ mod tests {
                 check_args.state_directory,
                 Utf8PathBuf::from("/var/lib/distronomicon/myapp")
             );
-            assert_eq!(check_args.github_host, "api.github.com");
-            assert!(!check_args.allow_prerelease);
-            assert!(check_args.github_token.is_none());
+            assert_eq!(check_args.github.host, "api.github.com");
+            assert!(!check_args.github.allow_prerelease);
+            assert!(check_args.github.token.is_none());
         } else {
             panic!("Expected Check command");
         }

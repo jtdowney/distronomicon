@@ -11,9 +11,9 @@ Options:
           GitHub repository (owner/name)
       --state-directory <STATE_DIRECTORY>
           State directory [env: STATE_DIRECTORY=]
-      --github-token <GITHUB_TOKEN>
+      --github-token <TOKEN>
           GitHub API token [env: GITHUB_TOKEN]
-      --github-host <GITHUB_HOST>
+      --github-host <HOST>
           GitHub API host [env: GITHUB_HOST=] [default: api.github.com]
       --allow-prerelease
           Allow prerelease versions
