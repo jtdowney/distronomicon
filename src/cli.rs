@@ -22,18 +22,18 @@ fn validate_app_name(s: &str) -> Result<String, String> {
 
 #[derive(Parser, Debug)]
 pub struct Args {
-    #[arg(long, value_parser = validate_app_name, help = "Application name")]
+    #[arg(long, value_parser = validate_app_name, help = "Application name (used for directory structure under install root)")]
     pub app: String,
 
     #[arg(
         long,
         env = "PREFIX",
         default_value = "/opt",
-        help = "Install root directory"
+        help = "Root directory for installations (creates <root>/<app>/{bin,releases,staging})"
     )]
     pub install_root: Utf8PathBuf,
 
-    #[arg(short, long, action = clap::ArgAction::Count, help = "Verbose output (-v, -vv)")]
+    #[arg(short, long, action = clap::ArgAction::Count, help = "Increase logging verbosity (-v for debug, -vv for trace)")]
     pub verbose: u8,
 
     #[command(subcommand)]
@@ -42,13 +42,15 @@ pub struct Args {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    #[command(about = "Check for updates without installing")]
+    #[command(about = "Check for updates without installing (updates cached state validators)")]
     Check(CheckArgs),
 
-    #[command(about = "Update to the latest release")]
+    #[command(
+        about = "Update to latest release (download, verify, extract, install, and optionally restart)"
+    )]
     Update(UpdateArgs),
 
-    #[command(about = "Show currently installed version")]
+    #[command(about = "Show currently installed version (derived from symlinks in bin directory)")]
     Version,
 }
 
@@ -58,7 +60,7 @@ pub struct GitHubConfig {
         long = "github-token",
         env = "GITHUB_TOKEN",
         hide_env_values = true,
-        help = "GitHub API token"
+        help = "GitHub API token (required for private repos or higher rate limits)"
     )]
     pub token: Option<String>,
 
@@ -66,20 +68,30 @@ pub struct GitHubConfig {
         long = "github-host",
         env = "GITHUB_HOST",
         default_value = "api.github.com",
-        help = "GitHub API host"
+        help = "GitHub API hostname (use for GitHub Enterprise)"
     )]
     pub host: String,
 
-    #[arg(long = "allow-prerelease", help = "Allow prerelease versions")]
+    #[arg(
+        long = "allow-prerelease",
+        help = "Include prerelease versions when checking for updates"
+    )]
     pub allow_prerelease: bool,
 }
 
 #[derive(Parser, Debug)]
 pub struct CheckArgs {
-    #[arg(long, help = "GitHub repository (owner/name)")]
+    #[arg(
+        long,
+        help = "GitHub repository in owner/repo format (e.g., 'rust-lang/rust')"
+    )]
     pub repo: String,
 
-    #[arg(long, env = "STATE_DIRECTORY", help = "State directory")]
+    #[arg(
+        long,
+        env = "STATE_DIRECTORY",
+        help = "Directory for storing state.json with ETags and timestamps"
+    )]
     pub state_directory: Utf8PathBuf,
 
     #[command(flatten)]
@@ -88,28 +100,51 @@ pub struct CheckArgs {
 
 #[derive(Parser, Debug)]
 pub struct UpdateArgs {
-    #[arg(long, help = "GitHub repository (owner/name)")]
+    #[arg(
+        long,
+        help = "GitHub repository in owner/repo format (e.g., 'rust-lang/rust')"
+    )]
     pub repo: String,
 
-    #[arg(long, help = "Asset filename pattern (regex)")]
+    #[arg(
+        long,
+        help = "Regex pattern to match release asset filename (e.g., '.*\\.tar\\.gz$')"
+    )]
     pub pattern: String,
 
-    #[arg(long, env = "STATE_DIRECTORY", help = "State directory")]
+    #[arg(
+        long,
+        env = "STATE_DIRECTORY",
+        help = "Directory for storing state.json with ETags and timestamps"
+    )]
     pub state_directory: Utf8PathBuf,
 
-    #[arg(long, help = "Checksum filename pattern (optional)")]
+    #[arg(
+        long,
+        help = "Regex pattern to match checksum file (e.g., 'SHA256SUMS'); required unless --skip-verification"
+    )]
     pub checksum_pattern: Option<String>,
 
     #[command(flatten)]
     pub github: GitHubConfig,
 
-    #[arg(long, help = "Command to run after successful update")]
+    #[arg(
+        long,
+        help = "Shell command to execute after successful update (e.g., 'systemctl restart myapp')"
+    )]
     pub restart_command: Option<String>,
 
-    #[arg(long, default_value = "3", help = "Number of releases to retain")]
+    #[arg(
+        long,
+        default_value = "3",
+        help = "Number of old releases to keep after update (older releases are pruned)"
+    )]
     pub retain: u32,
 
-    #[arg(long, help = "Skip checksum verification")]
+    #[arg(
+        long,
+        help = "Skip checksum verification (not recommended; use only for testing)"
+    )]
     pub skip_verification: bool,
 }
 

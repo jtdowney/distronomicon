@@ -31,8 +31,9 @@ fn version_with_no_installation() {
         .arg(install_root.as_str())
         .arg("version");
 
-    let output = cmd.assert().success().get_output().stdout.clone();
-    let stdout = String::from_utf8(output).unwrap();
+    let output = cmd.output().unwrap();
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout, "");
 }
 
@@ -50,8 +51,9 @@ fn version_with_installed_tag() {
         .arg(install_root.as_str())
         .arg("version");
 
-    let output = cmd.assert().success().get_output().stdout.clone();
-    let stdout = String::from_utf8(output).unwrap();
+    let output = cmd.output().unwrap();
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout, "v1.2.3\n");
 }
 
@@ -70,8 +72,9 @@ fn version_verbose_shows_diagnostics() {
         .arg("-v")
         .arg("version");
 
-    let output = cmd.assert().success().get_output().stdout.clone();
-    let stdout = String::from_utf8(output).unwrap();
+    let output = cmd.output().unwrap();
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8(output.stdout).unwrap();
 
     let normalized = stdout.replace(install_root.as_str(), "/tmp/test");
 
@@ -92,7 +95,8 @@ fn version_works_without_github_flags() {
         .arg(install_root.as_str())
         .arg("version");
 
-    let output = cmd.assert().success().get_output().stdout.clone();
-    let stdout = String::from_utf8(output).unwrap();
+    let output = cmd.output().unwrap();
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8(output.stdout).unwrap();
     assert_eq!(stdout, "v1.2.3\n");
 }
