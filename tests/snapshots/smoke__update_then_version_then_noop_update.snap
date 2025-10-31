@@ -1,0 +1,9 @@
+---
+source: tests/smoke.rs
+expression: stdout
+---
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}: distronomicon: Updating to v1.0.0
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}: distronomicon: Selected asset: testapp-1.0.0.zip
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}:verify{asset=testapp-1.0.0.zip}: distronomicon: Checksum verified
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}:switch{tag=v1.0.0}: distronomicon: Symlinks updated
+Successfully updated to v1.0.0
