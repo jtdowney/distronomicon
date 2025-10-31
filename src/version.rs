@@ -91,6 +91,78 @@ fn extract_tag_from_path(path: &Utf8Path) -> Option<String> {
         .map(|component| component.as_str().to_string())
 }
 
+/// Prints diagnostic information about the version discovery process.
+///
+/// Shows:
+/// - The bin directory path being checked
+/// - Any symlinks found and their targets
+/// - The releases directory path
+/// - The current version tag if discovered
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Reading the bin directory fails due to I/O errors
+/// - Reading directory entries fails
+/// - Reading symlink metadata fails
+/// - Reading symlink targets fails
+pub fn print_diagnostics<P: AsRef<Utf8Path>>(
+    prefix: P,
+    app: &str,
+    current_tag: Option<&str>,
+) -> Result<()> {
+    let prefix = prefix.as_ref();
+    let bin_dir = prefix.join(app).join("bin");
+    let releases_dir = prefix.join(app).join("releases");
+
+    println!("Diagnostic information:");
+    println!("  Bin directory: {bin_dir}");
+    println!("  Releases directory: {releases_dir}");
+    println!();
+
+    if !bin_dir.is_dir() {
+        println!("  No bin directory found");
+        println!();
+        println!("Current version: (none)");
+        return Ok(());
+    }
+
+    println!("  Symlinks in bin directory:");
+    let entries = fs::read_dir(&bin_dir)?;
+    let mut symlink_count = 0;
+
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+        let metadata = fs::symlink_metadata(&path)?;
+
+        if metadata.is_symlink() {
+            let target = fs::read_link(&path)?;
+            let file_name = entry.file_name();
+            println!(
+                "    {} -> {}",
+                file_name.to_string_lossy(),
+                target.display()
+            );
+            symlink_count += 1;
+        }
+    }
+
+    if symlink_count == 0 {
+        println!("    (no symlinks found)");
+    }
+
+    println!();
+
+    if let Some(tag) = current_tag {
+        println!("Current version: {tag}");
+    } else {
+        println!("Current version: (none)");
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::os::unix::fs::symlink;

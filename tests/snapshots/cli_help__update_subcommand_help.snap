@@ -4,7 +4,28 @@ expression: stdout
 ---
 Update to the latest release
 
-Usage: distronomicon --repo <REPO> --app <APP> --pattern <PATTERN> --state-directory <STATE_DIRECTORY> update
+Usage: distronomicon --app <APP> update [OPTIONS] --repo <REPO> --pattern <PATTERN> --state-directory <STATE_DIRECTORY>
 
 Options:
-  -h, --help  Print help
+      --repo <REPO>
+          GitHub repository (owner/name)
+      --pattern <PATTERN>
+          Asset filename pattern (regex)
+      --state-directory <STATE_DIRECTORY>
+          State directory [env: STATE_DIRECTORY=]
+      --checksum-pattern <CHECKSUM_PATTERN>
+          Checksum filename pattern (optional)
+      --github-token <GITHUB_TOKEN>
+          GitHub API token [env: GITHUB_TOKEN]
+      --github-host <GITHUB_HOST>
+          GitHub API host [env: GITHUB_HOST=] [default: api.github.com]
+      --allow-prerelease
+          Allow prerelease versions
+      --restart-command <RESTART_COMMAND>
+          Command to run after successful update
+      --retain <RETAIN>
+          Number of releases to retain [default: 3]
+      --skip-verification
+          Skip checksum verification
+  -h, --help
+          Print help

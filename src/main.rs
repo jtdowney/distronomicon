@@ -1,6 +1,7 @@
 use std::fs;
 
 use anyhow::{anyhow, ensure};
+use camino::Utf8Path;
 use camino_tempfile::NamedUtf8TempFile;
 use clap::Parser;
 use distronomicon::{
@@ -13,7 +14,7 @@ use regex::Regex;
 use tracing::{Level, info, trace, warn};
 use tracing_subscriber::FmtSubscriber;
 
-use crate::cli::{Args, Commands};
+use crate::cli::{Args, Commands, UpdateArgs};
 
 mod cli;
 
@@ -74,10 +75,85 @@ async fn download_and_verify_asset(
     Ok((downloaded_file, asset.name.clone()))
 }
 
-async fn handle_update(args: &Args) -> anyhow::Result<()> {
+fn install_release(
+    install_root: &Utf8Path,
+    app: &str,
+    tag: &str,
+    downloaded_file: &NamedUtf8TempFile,
+    asset_name: &str,
+) -> anyhow::Result<()> {
+    let staging_dir = fsops::make_staging(install_root, app, tag)?;
+
+    let temp_with_ext = staging_dir.join(asset_name);
+    fs::copy(downloaded_file.path(), &temp_with_ext)?;
+    extract::unpack(&temp_with_ext, &staging_dir)?;
+    fs::remove_file(&temp_with_ext)?;
+
+    let releases_dir = install_root.join(app).join("releases");
+    let installed_dir = fsops::atomic_move(&staging_dir, &releases_dir, tag)?;
+
+    let bin_dir = install_root.join(app).join("bin");
+    fs::create_dir_all(&bin_dir)?;
+    fsops::link_binaries(&installed_dir, &bin_dir)?;
+    info!("Symlinks updated");
+
+    Ok(())
+}
+
+fn finalize_update(
+    releases_dir: &Utf8Path,
+    state_path: &Utf8Path,
+    tag: &str,
+    validators_out: &github::ValidatorsOut,
+    restart_cmd: Option<&str>,
+    retain: usize,
+) -> anyhow::Result<()> {
+    let mut restart_failed = false;
+    if let Some(cmd) = restart_cmd {
+        match restart::execute(cmd) {
+            Ok(()) => {
+                info!("Restart command succeeded");
+            }
+            Err(e) => {
+                warn!("Restart command failed: {}", e);
+                restart_failed = true;
+            }
+        }
+    }
+
+    let deleted = fsops::prune_old_releases(releases_dir, tag, retain)?;
+    if !deleted.is_empty() {
+        info!("Pruned {} old release(s): {:?}", deleted.len(), deleted);
+    }
+
+    let now = Timestamp::now();
+    let new_state = State {
+        latest_tag: tag.to_string(),
+        etag: validators_out.etag.clone().unwrap_or_default(),
+        last_modified: validators_out
+            .last_modified
+            .as_ref()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(now),
+        installed_at: now,
+    };
+    state::save_atomic(state_path, &new_state)?;
+
+    ensure!(
+        !restart_failed,
+        "Update completed but restart command failed"
+    );
+
+    Ok(())
+}
+
+async fn handle_update(args: &Args, update_args: &UpdateArgs) -> anyhow::Result<()> {
     let _lock = lock::acquire(&args.app, None)?;
 
-    let state_path = args.state_directory.join(&args.app).join("state.json");
+    let state_path = update_args
+        .state_directory
+        .join(&args.app)
+        .join("state.json");
     let existing_state = state::load(&state_path)?;
 
     let validators = existing_state.as_ref().map_or_else(
@@ -92,10 +168,10 @@ async fn handle_update(args: &Args) -> anyhow::Result<()> {
     );
 
     let (release_opt, validators_out, was_modified) = github::fetch_latest(
-        &args.repo,
-        args.github_token.as_deref(),
-        Some(&args.github_host),
-        args.allow_prerelease,
+        &update_args.repo,
+        update_args.github_token.as_deref(),
+        Some(&update_args.github_host),
+        update_args.allow_prerelease,
         &validators,
     )
     .await?;
@@ -119,8 +195,8 @@ async fn handle_update(args: &Args) -> anyhow::Result<()> {
 
     info!("Updating to {tag}");
 
-    let asset_pattern = Regex::new(&args.pattern)?;
-    let checksum_pattern = args
+    let asset_pattern = Regex::new(&update_args.pattern)?;
+    let checksum_pattern = update_args
         .checksum_pattern
         .as_ref()
         .map(|p| Regex::new(p))
@@ -130,60 +206,28 @@ async fn handle_update(args: &Args) -> anyhow::Result<()> {
         &release,
         &asset_pattern,
         checksum_pattern.as_ref(),
-        args.github_token.as_deref(),
-        args.skip_verification,
+        update_args.github_token.as_deref(),
+        update_args.skip_verification,
     )
     .await?;
 
-    let staging_dir = fsops::make_staging(&args.install_root, &args.app, tag)?;
-
-    let temp_with_ext = staging_dir.join(&asset_name);
-    fs::copy(downloaded_file.path(), &temp_with_ext)?;
-    extract::unpack(&temp_with_ext, &staging_dir)?;
-    fs::remove_file(&temp_with_ext)?;
+    install_release(
+        &args.install_root,
+        &args.app,
+        tag,
+        &downloaded_file,
+        &asset_name,
+    )?;
 
     let releases_dir = args.install_root.join(&args.app).join("releases");
-    let installed_dir = fsops::atomic_move(&staging_dir, &releases_dir, tag)?;
-
-    let bin_dir = args.install_root.join(&args.app).join("bin");
-    fs::create_dir_all(&bin_dir)?;
-    fsops::link_binaries(&installed_dir, &bin_dir)?;
-    info!("Symlinks updated");
-
-    let mut restart_failed = false;
-    if let Some(restart_cmd) = args.restart_command.as_ref() {
-        match restart::execute(restart_cmd) {
-            Ok(()) => {
-                info!("Restart command succeeded");
-            }
-            Err(e) => {
-                warn!("Restart command failed: {}", e);
-                restart_failed = true;
-            }
-        }
-    }
-
-    let deleted = fsops::prune_old_releases(&releases_dir, tag, args.retain as usize)?;
-    if !deleted.is_empty() {
-        info!("Pruned {} old release(s): {:?}", deleted.len(), deleted);
-    }
-
-    let now = Timestamp::now();
-    let new_state = State {
-        latest_tag: tag.clone(),
-        etag: validators_out.etag.unwrap_or_default(),
-        last_modified: validators_out
-            .last_modified
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(now),
-        installed_at: now,
-    };
-    state::save_atomic(&state_path, &new_state)?;
-
-    ensure!(
-        !restart_failed,
-        "Update completed but restart command failed"
-    );
+    finalize_update(
+        &releases_dir,
+        &state_path,
+        tag,
+        &validators_out,
+        update_args.restart_command.as_deref(),
+        update_args.retain as usize,
+    )?;
 
     println!("Successfully updated to {tag}");
     Ok(())
@@ -202,9 +246,12 @@ async fn main() -> anyhow::Result<()> {
     let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
-    match args.command {
-        Commands::Check => {
-            let state_path = args.state_directory.join(&args.app).join("state.json");
+    match &args.command {
+        Commands::Check(check_args) => {
+            let state_path = check_args
+                .state_directory
+                .join(&args.app)
+                .join("state.json");
             let existing_state = state::load(&state_path)?;
 
             let validators = if let Some(state) = existing_state.as_ref() {
@@ -220,10 +267,10 @@ async fn main() -> anyhow::Result<()> {
             };
 
             let (release_opt, validators_out, _was_modified) = github::fetch_latest(
-                &args.repo,
-                args.github_token.as_deref(),
-                Some(&args.github_host),
-                args.allow_prerelease,
+                &check_args.repo,
+                check_args.github_token.as_deref(),
+                Some(&check_args.github_host),
+                check_args.allow_prerelease,
                 &validators,
             )
             .await?;
@@ -268,17 +315,18 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        Commands::Update => {
-            handle_update(&args).await?;
+        Commands::Update(update_args) => {
+            handle_update(&args, update_args).await?;
         }
         Commands::Version => {
             trace!("Subcommand: version");
 
-            if let Some(tag) = version::current_tag(&args.install_root, &args.app)? {
+            let current_tag = version::current_tag(&args.install_root, &args.app)?;
+
+            if args.verbose > 0 {
+                version::print_diagnostics(&args.install_root, &args.app, current_tag.as_deref())?;
+            } else if let Some(tag) = current_tag {
                 println!("{tag}");
-            } else {
-                eprintln!("No version installed");
-                std::process::exit(1);
             }
         }
     }

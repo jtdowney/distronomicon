@@ -4,7 +4,18 @@ expression: stdout
 ---
 Check for updates without installing
 
-Usage: distronomicon --repo <REPO> --app <APP> --pattern <PATTERN> --state-directory <STATE_DIRECTORY> check
+Usage: distronomicon --app <APP> check [OPTIONS] --repo <REPO> --state-directory <STATE_DIRECTORY>
 
 Options:
-  -h, --help  Print help
+      --repo <REPO>
+          GitHub repository (owner/name)
+      --state-directory <STATE_DIRECTORY>
+          State directory [env: STATE_DIRECTORY=]
+      --github-token <GITHUB_TOKEN>
+          GitHub API token [env: GITHUB_TOKEN]
+      --github-host <GITHUB_HOST>
+          GitHub API host [env: GITHUB_HOST=] [default: api.github.com]
+      --allow-prerelease
+          Allow prerelease versions
+  -h, --help
+          Print help

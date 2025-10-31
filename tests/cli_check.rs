@@ -61,19 +61,17 @@ async fn check_with_304_not_modified() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
-        .arg("--pattern")
-        .arg(".*\\.tar\\.gz")
-        .arg("--state-directory")
-        .arg(state_dir.as_str())
         .arg("--install-root")
         .arg(install_root.as_str())
+        .arg("check")
+        .arg("--repo")
+        .arg("owner/repo")
+        .arg("--state-directory")
+        .arg(state_dir.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("check")
         .output()
         .unwrap();
 
@@ -123,19 +121,17 @@ async fn check_with_update_available() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
-        .arg("--pattern")
-        .arg(".*\\.tar\\.gz")
-        .arg("--state-directory")
-        .arg(state_dir.as_str())
         .arg("--install-root")
         .arg(install_root.as_str())
+        .arg("check")
+        .arg("--repo")
+        .arg("owner/repo")
+        .arg("--state-directory")
+        .arg(state_dir.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("check")
         .output()
         .unwrap();
 
@@ -182,19 +178,17 @@ async fn check_no_current_version() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
-        .arg("--pattern")
-        .arg(".*\\.tar\\.gz")
-        .arg("--state-directory")
-        .arg(state_dir.as_str())
         .arg("--install-root")
         .arg(install_root.as_str())
+        .arg("check")
+        .arg("--repo")
+        .arg("owner/repo")
+        .arg("--state-directory")
+        .arg(state_dir.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("check")
         .output()
         .unwrap();
 
@@ -225,19 +219,17 @@ async fn check_network_error_exits_1() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
-        .arg("--pattern")
-        .arg(".*\\.tar\\.gz")
-        .arg("--state-directory")
-        .arg(state_dir.as_str())
         .arg("--install-root")
         .arg(install_root.as_str())
+        .arg("check")
+        .arg("--repo")
+        .arg("owner/repo")
+        .arg("--state-directory")
+        .arg(state_dir.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("check")
         .output()
         .unwrap();
 
@@ -286,19 +278,17 @@ async fn check_first_run_no_state() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
-        .arg("--pattern")
-        .arg(".*\\.tar\\.gz")
-        .arg("--state-directory")
-        .arg(state_dir.as_str())
         .arg("--install-root")
         .arg(install_root.as_str())
+        .arg("check")
+        .arg("--repo")
+        .arg("owner/repo")
+        .arg("--state-directory")
+        .arg(state_dir.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("check")
         .output()
         .unwrap();
 
@@ -342,19 +332,17 @@ async fn state_validators_updated_on_304() {
 
     let mut cmd = cargo_bin_cmd!("distronomicon");
     let output = cmd
-        .arg("--repo")
-        .arg("owner/repo")
         .arg("--app")
         .arg("myapp")
-        .arg("--pattern")
-        .arg(".*\\.tar\\.gz")
-        .arg("--state-directory")
-        .arg(state_dir.as_str())
         .arg("--install-root")
         .arg(install_root.as_str())
+        .arg("check")
+        .arg("--repo")
+        .arg("owner/repo")
+        .arg("--state-directory")
+        .arg(state_dir.as_str())
         .arg("--github-host")
         .arg(mock_server.uri())
-        .arg("check")
         .output()
         .unwrap();
 

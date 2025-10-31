@@ -2,7 +2,7 @@
 source: tests/cli_help.rs
 expression: stdout
 ---
-Usage: distronomicon [OPTIONS] --repo <REPO> --app <APP> --pattern <PATTERN> --state-directory <STATE_DIRECTORY> <COMMAND>
+Usage: distronomicon [OPTIONS] --app <APP> <COMMAND>
 
 Commands:
   check    Check for updates without installing
@@ -11,31 +11,7 @@ Commands:
   help     Print this message or the help of the given subcommand(s)
 
 Options:
-      --repo <REPO>
-          GitHub repository (owner/name)
-      --app <APP>
-          Application name
-      --pattern <PATTERN>
-          Asset filename pattern (regex)
-      --checksum-pattern <CHECKSUM_PATTERN>
-          Checksum filename pattern (optional)
-      --allow-prerelease
-          Allow prerelease versions
-      --github-token <GITHUB_TOKEN>
-          GitHub API token [env: GITHUB_TOKEN]
-      --github-host <GITHUB_HOST>
-          GitHub API host [env: GITHUB_HOST=] [default: api.github.com]
-      --restart-command <RESTART_COMMAND>
-          Command to run after successful update
-      --retain <RETAIN>
-          Number of releases to retain [default: 3]
-      --skip-verification
-          Skip checksum verification
-      --state-directory <STATE_DIRECTORY>
-          State directory [env: STATE_DIRECTORY=]
-      --install-root <INSTALL_ROOT>
-          Install root directory [env: PREFIX=] [default: /opt]
-  -v, --verbose...
-          Verbose output (-v, -vv)
-  -h, --help
-          Print help
+      --app <APP>                    Application name
+      --install-root <INSTALL_ROOT>  Install root directory [env: PREFIX=] [default: /opt]
+  -v, --verbose...                   Verbose output (-v, -vv)
+  -h, --help                         Print help
