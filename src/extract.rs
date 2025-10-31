@@ -449,6 +449,8 @@ mod tests {
     use std::{
         fs::{self, File},
         io::Write,
+        os::unix::fs as unix_fs,
+        process::Command,
     };
 
     use assert_matches::assert_matches;
@@ -573,8 +575,6 @@ mod tests {
 
     #[test]
     fn test_reject_symlink_zip() {
-        use std::{os::unix::fs as unix_fs, process::Command};
-
         let temp_dir = tempdir().unwrap();
 
         let source_dir = temp_dir.child("source");

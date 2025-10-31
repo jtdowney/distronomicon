@@ -198,8 +198,87 @@ pub fn link_binaries(
     Ok(())
 }
 
+/// Prunes old releases from the releases directory, keeping only the most recent ones.
+///
+/// Sorts release directories by modification time (newest first) and deletes releases
+/// beyond the `retain` count. Always preserves `current_tag` regardless of its age.
+///
+/// # Arguments
+///
+/// * `releases_dir` - Path to the releases directory containing versioned subdirectories
+/// * `current_tag` - The currently active release tag (will never be deleted)
+/// * `retain` - Number of recent releases to keep. The current release is always preserved even if it falls outside this count.
+///
+/// # Returns
+///
+/// A vector of deleted release tag names, or an error if deletion fails.
+///
+/// # Errors
+///
+/// Returns `FsOpsError::Io` if:
+/// - The releases directory cannot be read
+/// - Directory metadata cannot be accessed
+/// - A release directory cannot be deleted
+pub fn prune_old_releases(
+    releases_dir: impl AsRef<Utf8Path>,
+    current_tag: &str,
+    retain: usize,
+) -> Result<Vec<String>> {
+    let releases_dir = releases_dir.as_ref();
+
+    if !releases_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let entries = fs::read_dir(releases_dir)?
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let path = Utf8PathBuf::try_from(entry.path()).ok()?;
+
+            if !path.is_dir() {
+                return None;
+            }
+
+            let tag = path.file_name()?.to_string();
+            let metadata = entry.metadata().ok()?;
+            let modified = metadata.modified().ok()?;
+
+            Some((tag, modified))
+        })
+        .collect::<Vec<_>>();
+
+    let mut sorted_entries = entries;
+    sorted_entries.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| b.0.cmp(&a.0)));
+
+    let to_delete = sorted_entries
+        .iter()
+        .skip(retain)
+        .map(|(tag, _)| tag.clone())
+        .filter(|tag| tag != current_tag)
+        .collect::<Vec<_>>();
+
+    let mut deleted = Vec::new();
+
+    for tag in to_delete {
+        let release_path = releases_dir.join(&tag);
+        match fs::remove_dir_all(&release_path) {
+            Ok(()) => {
+                tracing::info!("pruned old release: {}", tag);
+                deleted.push(tag);
+            }
+            Err(e) => {
+                tracing::warn!("failed to prune release {}: {}", tag, e);
+            }
+        }
+    }
+
+    Ok(deleted)
+}
+
 #[cfg(test)]
 mod tests {
+    use std::{thread, time::Duration};
+
     use assert_matches::assert_matches;
     use camino_tempfile::tempdir;
     use camino_tempfile_ext::prelude::*;
@@ -564,5 +643,114 @@ mod tests {
             target.to_str().unwrap().contains("bin/cli"),
             "last executable (bin/cli) should win, got: {target:?}"
         );
+    }
+
+    #[test]
+    fn prune_old_releases_keeps_most_recent() {
+        let root = tempdir().unwrap();
+        let releases_dir = root.child("releases");
+        releases_dir.create_dir_all().unwrap();
+
+        for i in 1..=5 {
+            let tag = format!("v1.0.{i}");
+            let release = releases_dir.child(&tag);
+            release.create_dir_all().unwrap();
+            release.child("binary").write_str("data").unwrap();
+
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        let deleted = prune_old_releases(&releases_dir, "v1.0.5", 3).unwrap();
+
+        assert_eq!(deleted.len(), 2, "should delete 2 old releases");
+
+        assert!(releases_dir.child("v1.0.5").exists());
+        assert!(releases_dir.child("v1.0.4").exists());
+        assert!(releases_dir.child("v1.0.3").exists());
+        assert!(!releases_dir.child("v1.0.1").exists());
+        assert!(!releases_dir.child("v1.0.2").exists());
+    }
+
+    #[test]
+    fn prune_old_releases_with_retain_zero() {
+        let root = tempdir().unwrap();
+        let releases_dir = root.child("releases");
+        releases_dir.create_dir_all().unwrap();
+
+        releases_dir.child("v1.0.0").create_dir_all().unwrap();
+        releases_dir.child("v1.0.1").create_dir_all().unwrap();
+        releases_dir.child("v1.0.2").create_dir_all().unwrap();
+
+        let deleted = prune_old_releases(&releases_dir, "v1.0.2", 0).unwrap();
+
+        assert_eq!(deleted.len(), 2);
+        assert!(
+            releases_dir.child("v1.0.2").exists(),
+            "current should remain"
+        );
+        assert!(!releases_dir.child("v1.0.0").exists());
+        assert!(!releases_dir.child("v1.0.1").exists());
+    }
+
+    #[test]
+    fn prune_old_releases_no_deletions_when_under_limit() {
+        let root = tempdir().unwrap();
+        let releases_dir = root.child("releases");
+        releases_dir.create_dir_all().unwrap();
+
+        releases_dir.child("v1.0.0").create_dir_all().unwrap();
+        releases_dir.child("v1.0.1").create_dir_all().unwrap();
+
+        let deleted = prune_old_releases(&releases_dir, "v1.0.1", 5).unwrap();
+
+        assert_eq!(deleted.len(), 0, "should not delete when count <= retain");
+        assert!(releases_dir.child("v1.0.0").exists());
+        assert!(releases_dir.child("v1.0.1").exists());
+    }
+
+    #[test]
+    fn prune_old_releases_empty_directory() {
+        let root = tempdir().unwrap();
+        let releases_dir = root.child("releases");
+        releases_dir.create_dir_all().unwrap();
+
+        let deleted = prune_old_releases(&releases_dir, "v1.0.0", 3).unwrap();
+
+        assert_eq!(deleted.len(), 0, "empty directory should be no-op");
+    }
+
+    #[test]
+    fn prune_old_releases_never_deletes_current() {
+        let root = tempdir().unwrap();
+        let releases_dir = root.child("releases");
+        releases_dir.create_dir_all().unwrap();
+
+        releases_dir.child("v1.0.0").create_dir_all().unwrap();
+        thread::sleep(Duration::from_millis(10));
+        releases_dir.child("v1.0.1").create_dir_all().unwrap();
+        thread::sleep(Duration::from_millis(10));
+
+        releases_dir.child("v1.0.2").create_dir_all().unwrap();
+
+        let deleted = prune_old_releases(&releases_dir, "v1.0.0", 1).unwrap();
+
+        assert!(releases_dir.child("v1.0.0").exists());
+        assert!(!deleted.is_empty());
+    }
+
+    #[test]
+    fn prune_old_releases_ignores_non_directories() {
+        let root = tempdir().unwrap();
+        let releases_dir = root.child("releases");
+        releases_dir.create_dir_all().unwrap();
+
+        releases_dir.child("v1.0.0").create_dir_all().unwrap();
+        releases_dir.child("v1.0.1").create_dir_all().unwrap();
+        releases_dir.child("notes.txt").write_str("readme").unwrap();
+
+        let deleted = prune_old_releases(&releases_dir, "v1.0.1", 1).unwrap();
+
+        assert_eq!(deleted.len(), 1);
+        assert!(releases_dir.child("notes.txt").exists());
     }
 }

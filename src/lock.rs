@@ -41,20 +41,45 @@ impl Drop for LockGuard {
 /// - The parent directory cannot be created
 /// - The lock file cannot be created or opened
 /// - The lock operation fails
+///
+/// # Panics
+///
+/// This function panics if all lock paths fail to acquire and no error was recorded,
+/// which should not occur in practice given the current implementation.
 pub fn acquire(app: &str, lock_root: Option<&Utf8Path>) -> Result<LockGuard> {
-    let lock_path = match lock_root {
-        Some(root) => root.join(format!("distronomicon-{app}.lock")),
-        None => Utf8PathBuf::from(format!("/var/lock/distronomicon-{app}.lock")),
+    let lock_paths: Vec<Utf8PathBuf> = match lock_root {
+        Some(root) => vec![root.join(format!("distronomicon-{app}.lock"))],
+        None => {
+            vec![
+                Utf8PathBuf::from(format!("/var/lock/distronomicon-{app}.lock")),
+                Utf8PathBuf::from(format!("/tmp/distronomicon-{app}.lock")),
+            ]
+        }
     };
 
-    if let Some(parent) = lock_path.parent() {
-        fs::create_dir_all(parent)?;
+    let mut last_error = None;
+    for lock_path in lock_paths {
+        if let Some(parent) = lock_path.parent()
+            && let Err(e) = fs::create_dir_all(parent)
+        {
+            last_error = Some(e);
+            continue;
+        }
+
+        match File::create(&lock_path) {
+            Ok(file) => match file.lock() {
+                Ok(()) => return Ok(LockGuard { file }),
+                Err(e) => {
+                    last_error = Some(e);
+                }
+            },
+            Err(e) => {
+                last_error = Some(e);
+            }
+        }
     }
 
-    let file = File::create(&lock_path)?;
-    file.lock()?;
-
-    Ok(LockGuard { file })
+    Err(last_error.unwrap().into())
 }
 
 #[cfg(test)]
