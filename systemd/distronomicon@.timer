@@ -1,10 +1,10 @@
 [Unit]
-Description=Check for %i updates daily
+Description=Check for %i updates every 3 minutes
 Requires=distronomicon@%i.service
 
 [Timer]
-OnCalendar=daily
-RandomizedDelaySec=2h
+OnBootSec=3m
+OnUnitActiveSec=3m
 Persistent=true
 
 [Install]
