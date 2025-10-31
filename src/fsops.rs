@@ -248,7 +248,7 @@ pub fn prune_old_releases(
         .collect::<Vec<_>>();
 
     let mut sorted_entries = entries;
-    sorted_entries.sort_by(|a, b| b.1.cmp(&a.1));
+    sorted_entries.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| b.0.cmp(&a.0)));
 
     let to_delete = sorted_entries
         .iter()
@@ -745,7 +745,6 @@ mod tests {
         releases_dir.create_dir_all().unwrap();
 
         releases_dir.child("v1.0.0").create_dir_all().unwrap();
-        thread::sleep(Duration::from_millis(10));
         releases_dir.child("v1.0.1").create_dir_all().unwrap();
         releases_dir.child("notes.txt").write_str("readme").unwrap();
 
