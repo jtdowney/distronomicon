@@ -745,6 +745,7 @@ mod tests {
         releases_dir.create_dir_all().unwrap();
 
         releases_dir.child("v1.0.0").create_dir_all().unwrap();
+        thread::sleep(Duration::from_millis(10));
         releases_dir.child("v1.0.1").create_dir_all().unwrap();
         releases_dir.child("notes.txt").write_str("readme").unwrap();
 
