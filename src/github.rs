@@ -2,8 +2,8 @@ use anyhow::Result;
 use jiff::Timestamp;
 use regex::Regex;
 use reqwest::{
-    header::{ACCEPT, AUTHORIZATION, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LAST_MODIFIED},
     StatusCode,
+    header::{ACCEPT, AUTHORIZATION, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LAST_MODIFIED},
 };
 use serde::Deserialize;
 
@@ -140,8 +140,8 @@ pub fn select_asset<'a>(assets: &'a [Asset], pattern: &Regex) -> Option<&'a Asse
 #[cfg(test)]
 mod tests {
     use wiremock::{
-        matchers::{header, header_exists, method, path},
         Mock, MockServer, ResponseTemplate,
+        matchers::{header, header_exists, method, path},
     };
 
     use super::*;

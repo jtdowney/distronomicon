@@ -7,8 +7,8 @@ use insta::assert_snapshot;
 use regex::Regex;
 use sha2::{Digest as _, Sha256};
 use wiremock::{
-    matchers::{method, path},
     Mock, MockServer, ResponseTemplate,
+    matchers::{method, path},
 };
 
 fn create_zip_with_binary(app_name: &str, content: &[u8]) -> Vec<u8> {

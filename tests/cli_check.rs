@@ -5,8 +5,8 @@ use camino::Utf8PathBuf;
 use camino_tempfile::Utf8TempDir;
 use jiff::Timestamp;
 use wiremock::{
-    matchers::{method, path},
     Mock, MockServer, ResponseTemplate,
+    matchers::{method, path},
 };
 
 fn create_state_file(state_dir: &Utf8PathBuf, app: &str, tag: &str, etag: &str) {

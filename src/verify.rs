@@ -154,8 +154,8 @@ mod tests {
     use camino_tempfile::tempdir;
     use camino_tempfile_ext::prelude::*;
     use wiremock::{
-        matchers::{header, method, path},
         Mock, MockServer, ResponseTemplate,
+        matchers::{header, method, path},
     };
 
     use super::*;

@@ -8,12 +8,12 @@ use assert_cmd::cargo::cargo_bin_cmd;
 use camino::Utf8Path;
 use camino_tempfile::tempdir;
 use camino_tempfile_ext::prelude::*;
-use flate2::{write::GzEncoder, Compression};
+use flate2::{Compression, write::GzEncoder};
 use jiff::Timestamp;
 use sha2::{Digest as _, Sha256};
 use wiremock::{
-    matchers::{method, path},
     Mock, MockServer, ResponseTemplate,
+    matchers::{method, path},
 };
 
 fn create_state_file(state_dir: impl AsRef<Utf8Path>, app: &str, tag: &str, etag: &str) {

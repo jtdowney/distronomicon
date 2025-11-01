@@ -3,7 +3,7 @@ use std::io::Write;
 use camino_tempfile::NamedUtf8TempFile;
 use futures_util::StreamExt;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use thiserror::Error;
 
 use crate::DEFAULT_TIMEOUT;
@@ -69,8 +69,8 @@ mod tests {
     use std::{fs, time::Duration};
 
     use wiremock::{
-        matchers::{header, method, path},
         Mock, MockServer, ResponseTemplate,
+        matchers::{header, method, path},
     };
 
     use super::*;

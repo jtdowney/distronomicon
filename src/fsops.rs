@@ -7,7 +7,7 @@ use std::{
 
 use camino::{Utf8Path, Utf8PathBuf};
 use camino_tempfile::Builder;
-use rustix::fs::{renameat_with, RenameFlags, CWD};
+use rustix::fs::{CWD, RenameFlags, renameat_with};
 use thiserror::Error;
 use tracing::{info, warn};
 
@@ -120,10 +120,10 @@ pub fn discover_executables(dir: impl AsRef<Utf8Path>) -> Result<Vec<Utf8PathBuf
                 }
             } else if metadata.is_file() {
                 let mode = metadata.permissions().mode();
-                if mode & 0o111 != 0 {
-                    if let Ok(rel_path) = path.strip_prefix(base) {
-                        executables.push(rel_path.to_path_buf());
-                    }
+                if mode & 0o111 != 0
+                    && let Ok(rel_path) = path.strip_prefix(base)
+                {
+                    executables.push(rel_path.to_path_buf());
                 }
             }
         }
@@ -212,12 +212,11 @@ pub fn link_binaries(
         for link_path in existing_links {
             if let Ok(target) = fs::read_link(&link_path) {
                 let target_str = target.to_string_lossy();
-                if target_str.starts_with("../releases/") {
-                    if let Some(link_name) = link_path.file_name() {
-                        if !current_names.contains(&link_name) {
-                            let _ = fs::remove_file(&link_path);
-                        }
-                    }
+                if target_str.starts_with("../releases/")
+                    && let Some(link_name) = link_path.file_name()
+                    && !current_names.contains(&link_name)
+                {
+                    let _ = fs::remove_file(&link_path);
                 }
             }
         }

@@ -224,10 +224,10 @@ fn unpack_zip(
             total_bytes += limited_reader.bytes_read();
             file_count += 1;
 
-            if let Some(mode) = entry.unix_mode() {
-                if mode & 0o111 != 0 {
-                    set_unix_permissions(&dest_path, mode)?;
-                }
+            if let Some(mode) = entry.unix_mode()
+                && mode & 0o111 != 0
+            {
+                set_unix_permissions(&dest_path, mode)?;
             }
         } else {
             return Err(ExtractError::PathValidation(format!(

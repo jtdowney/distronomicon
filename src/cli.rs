@@ -9,9 +9,9 @@ use regex::Regex;
 use tracing::{info, info_span, warn};
 
 use crate::{
-    download, extract, fsops, github, lock, restart,
+    DEFAULT_GITHUB_HOST, DEFAULT_INSTALL_ROOT, download, extract, fsops, github, lock, restart,
     state::{self, State},
-    verify, version, DEFAULT_GITHUB_HOST, DEFAULT_INSTALL_ROOT,
+    verify, version,
 };
 
 fn validate_app_name(s: &str) -> Result<String, String> {
@@ -201,18 +201,17 @@ fn is_up_to_date(
     existing_state: Option<&State>,
     was_modified: bool,
 ) -> bool {
-    if !was_modified {
-        if let (Some(current), Some(state)) = (current_tag, existing_state) {
-            if *current == state.latest_tag {
-                return true;
-            }
-        }
+    if !was_modified
+        && let (Some(current), Some(state)) = (current_tag, existing_state)
+        && *current == state.latest_tag
+    {
+        return true;
     }
 
-    if let (Some(current), Some(release)) = (current_tag, release_opt) {
-        if *current == release.tag_name {
-            return true;
-        }
+    if let (Some(current), Some(release)) = (current_tag, release_opt)
+        && *current == release.tag_name
+    {
+        return true;
     }
 
     false
@@ -239,21 +238,19 @@ async fn download_and_verify_asset(
             .await?
     };
 
-    if !skip_verification {
-        if let Some(checksum_regex) = checksum_pattern {
-            let _span = info_span!("verify", asset = %asset.name).entered();
-            let checksum_asset = github::select_asset(&release.assets, checksum_regex)
-                .ok_or_else(|| anyhow!("No checksum asset matching pattern"))?;
-            verify::fetch_and_verify_checksum(
-                &asset.name,
-                &checksum_asset.browser_download_url,
-                github_token,
-                http_client,
-                downloaded_file.path(),
-            )
-            .await?;
-            info!("Checksum verified");
-        }
+    if !skip_verification && let Some(checksum_regex) = checksum_pattern {
+        let _span = info_span!("verify", asset = %asset.name).entered();
+        let checksum_asset = github::select_asset(&release.assets, checksum_regex)
+            .ok_or_else(|| anyhow!("No checksum asset matching pattern"))?;
+        verify::fetch_and_verify_checksum(
+            &asset.name,
+            &checksum_asset.browser_download_url,
+            github_token,
+            http_client,
+            downloaded_file.path(),
+        )
+        .await?;
+        info!("Checksum verified");
     }
 
     Ok((downloaded_file, asset.name.clone()))
