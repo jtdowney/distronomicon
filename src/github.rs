@@ -23,6 +23,7 @@ pub struct Release {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Asset {
     pub name: String,
+    pub url: String,
     pub browser_download_url: String,
     pub size: u64,
 }
@@ -156,6 +157,7 @@ mod tests {
             "assets": [
                 {
                     "name": "app-linux-amd64.tar.gz",
+                    "url": "https://api.github.com/repos/owner/repo/releases/assets/1",
                     "browser_download_url": "https://github.com/owner/repo/releases/download/v0.1.3/app-linux-amd64.tar.gz",
                     "size": 1024
                 }
@@ -279,6 +281,7 @@ mod tests {
                 "assets": [
                     {
                         "name": "app-beta.tar.gz",
+                        "url": "https://api.github.com/repos/owner/repo/releases/assets/2",
                         "browser_download_url": "https://github.com/owner/repo/releases/download/v0.2.0-beta.1/app-beta.tar.gz",
                         "size": 2048
                     }
@@ -291,6 +294,7 @@ mod tests {
                 "assets": [
                     {
                         "name": "app-stable.tar.gz",
+                        "url": "https://api.github.com/repos/owner/repo/releases/assets/3",
                         "browser_download_url": "https://github.com/owner/repo/releases/download/v0.1.5/app-stable.tar.gz",
                         "size": 1536
                     }
@@ -394,6 +398,7 @@ mod tests {
                 "assets": [
                     {
                         "name": "app-draft.tar.gz",
+                        "url": "https://api.github.com/repos/owner/repo/releases/assets/4",
                         "browser_download_url": "https://github.com/owner/repo/releases/download/v0.3.0/app-draft.tar.gz",
                         "size": 3072
                     }
@@ -407,6 +412,7 @@ mod tests {
                 "assets": [
                     {
                         "name": "app-stable.tar.gz",
+                        "url": "https://api.github.com/repos/owner/repo/releases/assets/5",
                         "browser_download_url": "https://github.com/owner/repo/releases/download/v0.2.0/app-stable.tar.gz",
                         "size": 2048
                     }
@@ -485,16 +491,19 @@ mod tests {
         let assets = vec![
             Asset {
                 name: "app-linux-amd64.tar.gz".to_string(),
+                url: "https://api.github.com/repos/owner/repo/releases/assets/1".to_string(),
                 browser_download_url: "https://example.com/app-linux-amd64.tar.gz".to_string(),
                 size: 1024,
             },
             Asset {
                 name: "app-darwin-amd64.tar.gz".to_string(),
+                url: "https://api.github.com/repos/owner/repo/releases/assets/2".to_string(),
                 browser_download_url: "https://example.com/app-darwin-amd64.tar.gz".to_string(),
                 size: 2048,
             },
             Asset {
                 name: "app-linux-arm64.tar.gz".to_string(),
+                url: "https://api.github.com/repos/owner/repo/releases/assets/3".to_string(),
                 browser_download_url: "https://example.com/app-linux-arm64.tar.gz".to_string(),
                 size: 3072,
             },
@@ -512,11 +521,13 @@ mod tests {
         let assets = vec![
             Asset {
                 name: "app-darwin-amd64.tar.gz".to_string(),
+                url: "https://api.github.com/repos/owner/repo/releases/assets/1".to_string(),
                 browser_download_url: "https://example.com/app-darwin-amd64.tar.gz".to_string(),
                 size: 1024,
             },
             Asset {
                 name: "app-windows-amd64.zip".to_string(),
+                url: "https://api.github.com/repos/owner/repo/releases/assets/2".to_string(),
                 browser_download_url: "https://example.com/app-windows-amd64.zip".to_string(),
                 size: 2048,
             },
@@ -533,16 +544,19 @@ mod tests {
         let assets = vec![
             Asset {
                 name: "checksums.txt".to_string(),
+                url: "https://api.github.com/repos/owner/repo/releases/assets/1".to_string(),
                 browser_download_url: "https://example.com/checksums.txt".to_string(),
                 size: 128,
             },
             Asset {
                 name: "SHA256SUMS".to_string(),
+                url: "https://api.github.com/repos/owner/repo/releases/assets/2".to_string(),
                 browser_download_url: "https://example.com/SHA256SUMS".to_string(),
                 size: 256,
             },
             Asset {
                 name: "checksums.sha256".to_string(),
+                url: "https://api.github.com/repos/owner/repo/releases/assets/3".to_string(),
                 browser_download_url: "https://example.com/checksums.sha256".to_string(),
                 size: 200,
             },

@@ -95,11 +95,13 @@ async fn update_happy_path_with_checksum() {
         "assets": [
             {
                 "name": "myapp-1.1.0.tar.gz",
+                "url": format!("{}/download/myapp-1.1.0.tar.gz", mock_server.uri()),
                 "browser_download_url": format!("{}/download/myapp-1.1.0.tar.gz", mock_server.uri()),
                 "size": tar_gz.len()
             },
             {
                 "name": "SHA256SUMS",
+                "url": format!("{}/download/SHA256SUMS", mock_server.uri()),
                 "browser_download_url": format!("{}/download/SHA256SUMS", mock_server.uri()),
                 "size": checksum_file.len()
             }
@@ -187,6 +189,7 @@ async fn update_no_matching_asset() {
         "assets": [
             {
                 "name": "different-app.tar.gz",
+                "url": format!("{}/download/different-app.tar.gz", mock_server.uri()),
                 "browser_download_url": format!("{}/download/different-app.tar.gz", mock_server.uri()),
                 "size": 1024
             }
@@ -257,11 +260,13 @@ async fn update_checksum_mismatch() {
         "assets": [
             {
                 "name": "myapp-1.1.0.tar.gz",
+                "url": format!("{}/download/myapp-1.1.0.tar.gz", mock_server.uri()),
                 "browser_download_url": format!("{}/download/myapp-1.1.0.tar.gz", mock_server.uri()),
                 "size": tar_gz.len()
             },
             {
                 "name": "SHA256SUMS",
+                "url": format!("{}/download/SHA256SUMS", mock_server.uri()),
                 "browser_download_url": format!("{}/download/SHA256SUMS", mock_server.uri()),
                 "size": checksum_file.len()
             }
@@ -344,6 +349,7 @@ async fn update_restart_command_failure() {
         "assets": [
             {
                 "name": "myapp-1.1.0.tar.gz",
+                "url": format!("{}/download/myapp-1.1.0.tar.gz", mock_server.uri()),
                 "browser_download_url": format!("{}/download/myapp-1.1.0.tar.gz", mock_server.uri()),
                 "size": tar_gz.len()
             }
@@ -469,6 +475,7 @@ async fn update_skip_verification() {
         "assets": [
             {
                 "name": "myapp-1.1.0.tar.gz",
+                "url": format!("{}/download/myapp-1.1.0.tar.gz", mock_server.uri()),
                 "browser_download_url": format!("{}/download/myapp-1.1.0.tar.gz", mock_server.uri()),
                 "size": tar_gz.len()
             }
@@ -563,6 +570,7 @@ async fn update_removes_stale_symlinks() {
         "assets": [
             {
                 "name": "myapp-2.0.0.tar.gz",
+                "url": format!("{}/download/myapp-2.0.0.tar.gz", mock_server.uri()),
                 "browser_download_url": format!("{}/download/myapp-2.0.0.tar.gz", mock_server.uri()),
                 "size": v2_tar_gz.len()
             }

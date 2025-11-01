@@ -91,6 +91,7 @@ async fn check_with_update_available() {
         "draft": false,
         "assets": [{
             "name": "myapp.tar.gz",
+            "url": "https://api.github.com/repos/owner/repo/releases/assets/1",
             "browser_download_url": "https://github.com/owner/repo/releases/download/v1.1.0/myapp.tar.gz",
             "size": 1024
         }]
@@ -146,6 +147,7 @@ async fn check_no_current_version() {
         "draft": false,
         "assets": [{
             "name": "myapp.tar.gz",
+            "url": "https://api.github.com/repos/owner/repo/releases/assets/1",
             "browser_download_url": "https://github.com/owner/repo/releases/download/v1.0.0/myapp.tar.gz",
             "size": 1024
         }]
@@ -231,6 +233,7 @@ async fn check_first_run_no_state() {
         "draft": false,
         "assets": [{
             "name": "myapp.tar.gz",
+            "url": "https://api.github.com/repos/owner/repo/releases/assets/1",
             "browser_download_url": "https://github.com/owner/repo/releases/download/v1.0.0/myapp.tar.gz",
             "size": 1024
         }]

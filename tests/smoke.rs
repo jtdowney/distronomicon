@@ -48,11 +48,13 @@ async fn setup_mock_server(
         "assets": [
             {
                 "name": "testapp-1.0.0.zip",
+                "url": format!("{}/download/testapp-1.0.0.zip", mock_server.uri()),
                 "browser_download_url": format!("{}/download/testapp-1.0.0.zip", mock_server.uri()),
                 "size": zip.len()
             },
             {
                 "name": "SHA256SUMS",
+                "url": format!("{}/download/SHA256SUMS", mock_server.uri()),
                 "browser_download_url": format!("{}/download/SHA256SUMS", mock_server.uri()),
                 "size": checksum_file.len()
             }

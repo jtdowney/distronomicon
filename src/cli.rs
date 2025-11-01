@@ -230,9 +230,9 @@ async fn download_and_verify_asset(
     info!("Selected asset: {}", asset.name);
 
     let downloaded_file = {
-        let _span = info_span!("download", url = %asset.browser_download_url).entered();
+        let _span = info_span!("download", url = %asset.url).entered();
         download::fetch()
-            .url(&asset.browser_download_url)
+            .url(&asset.url)
             .maybe_token(github_token)
             .client(http_client.clone())
             .await?
@@ -244,7 +244,7 @@ async fn download_and_verify_asset(
             .ok_or_else(|| anyhow!("No checksum asset matching pattern"))?;
         verify::fetch_and_verify_checksum(
             &asset.name,
-            &checksum_asset.browser_download_url,
+            &checksum_asset.url,
             github_token,
             http_client,
             downloaded_file.path(),

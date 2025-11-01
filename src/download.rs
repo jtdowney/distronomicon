@@ -44,7 +44,9 @@ pub async fn fetch(
         .with(retry_middleware)
         .build();
 
-    let mut request = client_with_middleware.get(url);
+    let mut request = client_with_middleware
+        .get(url)
+        .header("Accept", "application/octet-stream");
     if let Some(token) = token {
         request = request.header("Authorization", format!("Bearer {token}"));
     }
@@ -207,5 +209,31 @@ mod tests {
         let result = fetch().url(&url).token("test-token").await;
 
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_sends_accept_octet_stream_header() {
+        let mock_server = MockServer::start().await;
+        let body_content = b"binary asset data";
+
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/releases/assets/12345"))
+            .and(header("Accept", "application/octet-stream"))
+            .respond_with(ResponseTemplate::new(200).set_body_bytes(body_content))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let url = format!(
+            "{}/repos/owner/repo/releases/assets/12345",
+            mock_server.uri()
+        );
+        let result = fetch().url(&url).token("test-token").await;
+
+        assert!(result.is_ok());
+
+        let temp_file = result.unwrap();
+        let contents = fs::read(temp_file.path()).unwrap();
+        assert_eq!(contents, body_content);
     }
 }
