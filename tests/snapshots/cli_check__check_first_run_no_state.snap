@@ -1,0 +1,5 @@
+---
+source: tests/cli_check.rs
+expression: stdout
+---
+install-available: v1.0.0

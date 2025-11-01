@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for %i updates every 3 minutes
+Requires=distronomicon@%i.service
+
+[Timer]
+OnBootSec=3m
+OnUnitActiveSec=3m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

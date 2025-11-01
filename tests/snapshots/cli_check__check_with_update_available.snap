@@ -1,0 +1,5 @@
+---
+source: tests/cli_check.rs
+expression: stdout
+---
+update-available: v1.0.0 -> v1.1.0

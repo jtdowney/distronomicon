@@ -1,0 +1,19 @@
+---
+source: tests/cli_help.rs
+expression: stdout
+---
+Usage: distronomicon [OPTIONS] --app <APP> <COMMAND>
+
+Commands:
+  check    Check for updates without installing (updates cached state validators)
+  update   Update to latest release (download, verify, extract, install, and optionally restart)
+  version  Show currently installed version (derived from symlinks in bin directory)
+  unlock   Forcibly remove the lock file (use with caution)
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+      --app <APP>                    Application name (used for directory structure under install root)
+      --install-root <INSTALL_ROOT>  Root directory for installations (creates <root>/<app>/{bin,releases,staging}) [env: PREFIX=] [default: /opt]
+      --http-timeout <HTTP_TIMEOUT>  HTTP request timeout in seconds (applies to downloads, GitHub API, checksum verification) [default: 300]
+  -v, --verbose...                   Increase logging verbosity (-v for debug, -vv for trace)
+  -h, --help                         Print help

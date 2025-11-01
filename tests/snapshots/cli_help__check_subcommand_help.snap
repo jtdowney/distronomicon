@@ -1,0 +1,21 @@
+---
+source: tests/cli_help.rs
+expression: stdout
+---
+Check for updates without installing (updates cached state validators)
+
+Usage: distronomicon --app <APP> check [OPTIONS] --repo <REPO> --state-directory <STATE_DIRECTORY>
+
+Options:
+      --repo <REPO>
+          GitHub repository in owner/repo format (e.g., 'rust-lang/rust')
+      --state-directory <STATE_DIRECTORY>
+          Directory for storing state.json with ETags and timestamps [env: STATE_DIRECTORY=]
+      --github-token <TOKEN>
+          GitHub API token (required for private repos or higher rate limits) [env: GITHUB_TOKEN]
+      --github-host <HOST>
+          GitHub API hostname (use for GitHub Enterprise) [env: GITHUB_HOST=] [default: https://api.github.com]
+      --allow-prerelease
+          Include prerelease versions when checking for updates
+  -h, --help
+          Print help

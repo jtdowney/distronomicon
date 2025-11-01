@@ -1,0 +1,6 @@
+---
+source: tests/smoke.rs
+expression: normalize_output(&output)
+---
+[TIMESTAMP]  INFO distronomicon::cli: Removing lock file for app: testapp
+Lock file removed for app: testapp

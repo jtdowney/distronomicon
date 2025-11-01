@@ -1,0 +1,11 @@
+[workspace]
+members = ["cargo:."]
+
+[dist]
+cargo-dist-version = "0.30.1"
+ci = "github"
+installers = ["shell"]
+github-attestations = true
+targets = ["aarch64-unknown-linux-gnu", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]
+install-path = "CARGO_HOME"
+install-updater = false

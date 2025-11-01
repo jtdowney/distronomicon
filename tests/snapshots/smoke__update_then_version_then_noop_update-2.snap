@@ -1,0 +1,5 @@
+---
+source: tests/smoke.rs
+expression: stdout
+---
+Already up-to-date: v1.0.0

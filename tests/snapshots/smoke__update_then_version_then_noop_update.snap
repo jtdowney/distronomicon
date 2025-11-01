@@ -1,0 +1,10 @@
+---
+source: tests/smoke.rs
+expression: normalize_output(&output)
+---
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}: distronomicon::cli: Updating to v1.0.0
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}: distronomicon::cli: Selected asset: testapp-1.0.0.zip
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}:verify{asset=testapp-1.0.0.zip}: distronomicon::cli: Checksum verified
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}:fsync{dir=[TMPDIR]: distronomicon::cli: Staged content synced to disk
+[TIMESTAMP]  INFO update{app=testapp repo=owner/repo}:switch{tag=v1.0.0}: distronomicon::cli: Symlinks updated
+Successfully updated to v1.0.0

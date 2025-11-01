@@ -1,0 +1,35 @@
+---
+source: tests/cli_help.rs
+expression: stdout
+---
+Update to latest release (download, verify, extract, install, and optionally restart)
+
+Usage: distronomicon --app <APP> update [OPTIONS] --repo <REPO> --pattern <PATTERN> --state-directory <STATE_DIRECTORY>
+
+Options:
+      --repo <REPO>
+          GitHub repository in owner/repo format (e.g., 'rust-lang/rust')
+      --pattern <PATTERN>
+          Regex pattern to match release asset filename (e.g., '.*\.tar\.gz$')
+      --state-directory <STATE_DIRECTORY>
+          Directory for storing state.json with ETags and timestamps [env: STATE_DIRECTORY=]
+      --checksum-pattern <CHECKSUM_PATTERN>
+          Regex pattern to match checksum file (e.g., 'SHA256SUMS'); required unless --skip-verification
+      --github-token <TOKEN>
+          GitHub API token (required for private repos or higher rate limits) [env: GITHUB_TOKEN]
+      --github-host <HOST>
+          GitHub API hostname (use for GitHub Enterprise) [env: GITHUB_HOST=] [default: https://api.github.com]
+      --allow-prerelease
+          Include prerelease versions when checking for updates
+      --restart-command <RESTART_COMMAND>
+          Shell command to execute after successful update (e.g., 'systemctl restart myapp')
+      --retain <RETAIN>
+          Number of old releases to keep after update (older releases are pruned) [default: 3]
+      --skip-verification
+          Skip checksum verification (not recommended; use only for testing)
+      --force-unlock
+          Forcibly remove lock file before starting update (use with caution)
+      --lock-timeout <LOCK_TIMEOUT>
+          Maximum seconds to wait for lock acquisition (default: 30) [default: 30]
+  -h, --help
+          Print help
