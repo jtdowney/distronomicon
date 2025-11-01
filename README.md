@@ -1,5 +1,9 @@
 # distronomicon
 
+[![Crates.io](https://img.shields.io/crates/v/distronomicon)](https://crates.io/crates/distronomicon)
+[![License](https://img.shields.io/crates/l/distronomicon)](LICENSE)
+[![CI](https://github.com/jtdowney/distronomicon/actions/workflows/ci.yml/badge.svg)](https://github.com/jtdowney/distronomicon/actions/workflows/ci.yml)
+
 A Linux tool that checks GitHub for repository releases and performs atomic updates under `/opt/<app>`. Designed for use with systemd timers.
 
 ## Installation
@@ -47,6 +51,7 @@ distronomicon --app myapp update \
 ```
 
 This will:
+
 1. Download the matching release asset
 2. Verify the checksum
 3. Extract to `/opt/myapp/releases/<tag>`
