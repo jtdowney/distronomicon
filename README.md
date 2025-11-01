@@ -4,6 +4,14 @@ A Linux tool that checks GitHub for repository releases and performs atomic upda
 
 ## Installation
 
+### From crates.io
+
+```bash
+cargo install distronomicon
+```
+
+### From source
+
 ```bash
 cargo build --release
 sudo cp target/release/distronomicon /usr/local/bin/
