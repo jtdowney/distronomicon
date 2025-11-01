@@ -109,7 +109,9 @@ pub async fn fetch_and_verify_checksum(
     client: reqwest::Client,
     downloaded_path: &Utf8Path,
 ) -> Result<()> {
-    let mut request = client.get(checksum_url);
+    let mut request = client
+        .get(checksum_url)
+        .header("Accept", "application/octet-stream");
 
     if let Some(token) = token {
         request = request.bearer_auth(token);
@@ -420,5 +422,35 @@ mod tests {
 
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), VerifyError::Request(_)));
+    }
+
+    #[tokio::test]
+    async fn test_sends_accept_octet_stream_header() {
+        let temp_dir = tempdir().unwrap();
+        let file_path = temp_dir.child("test-asset.tar.xz");
+        file_path.write_binary(b"binary content").unwrap();
+
+        let expected_hash = "93a0b24644f2e0fd11d6b422c90275c482b0cc20be4a4e3f62148ed2932b4792";
+        let checksum_content = format!("{expected_hash}  test-asset.tar.xz");
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/repos/owner/repo/releases/assets/12345"))
+            .and(header("Accept", "application/octet-stream"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(checksum_content))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let client = reqwest::Client::new();
+        let checksum_url = format!(
+            "{}/repos/owner/repo/releases/assets/12345",
+            mock_server.uri()
+        );
+        let result =
+            fetch_and_verify_checksum("test-asset.tar.xz", &checksum_url, None, client, &file_path)
+                .await;
+
+        assert!(result.is_ok());
     }
 }
