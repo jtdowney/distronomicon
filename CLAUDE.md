@@ -49,14 +49,14 @@ The codebase follows a library-first design with a thin CLI wrapper:
 - **`src/lib.rs`** — Public API for update operations
 - **`src/cli.rs`** — Clap argument parsing and CLI structs
 
-**Core modules** (planned, per `docs/spec.md`):
+**Core modules** (implemented):
 - `github` — GitHub API client, release queries, conditional requests
-- `download` — Asset fetching with reqwest-retry
+- `download` — Asset fetching with reqwest-middleware and reqwest-retry
 - `verify` — SHA256 checksum parsing and validation
-- `extract` — Archive detection and safe extraction (tar.gz, zip, etc.)
-- `fsops` — Atomic moves, symlink updates, retention pruning
-- `state` — JSON state file (ETag, Last-Modified, installed_at) with atomic writes
-- `lock` — Exclusive process locking via `/var/lock/distronomicon-<app>.lock`
+- `extract` — Archive detection and safe extraction (tar.gz, tar.bz2, tar.xz, tar.zst, zip) with autocompress
+- `fsops` — Atomic moves, symlink updates, retention pruning, fsync operations
+- `state` — JSON state file (ETag, Last-Modified, installed_at) with atomic writes using jiff timestamps
+- `lock` — Exclusive process locking with timeout support
 - `restart` — Execute optional `--restart-cmd` via shell
 - `version` — Discover currently installed version from symlinks
 
@@ -101,7 +101,8 @@ Default paths (configurable via `--opt-root` and `--state-dir`):
 
 - **`check`** — Query GitHub for updates; print status; update state validators (ETag/Last-Modified); no install side effects
 - **`update`** — Full update lifecycle (lock → check → download → verify → extract → switch → restart → prune)
-- **`version`** — Print currently active tag (derived from `/opt/<app>/bin` symlinks)
+- **`version`** — Print currently active tag (derived from `/opt/<app>/bin` symlinks); `-v` shows detailed diagnostics
+- **`unlock`** — Forcibly remove lock file (use with caution to clean up stale locks)
 
 Exit codes: `0` = success or no-op; `1` = any failure
 
@@ -121,23 +122,34 @@ Exit codes: `0` = success or no-op; `1` = any failure
 ## Implementation Notes
 
 - Use `tracing` spans for major steps (update, download, verify, extract, switch, restart)
-- Return rich errors (consider `thiserror`) and map to `std::process::exit(1)` in `main`
+- Error handling uses `anyhow::Result` for application errors and `thiserror` for library error types
 - Favor small, pure functions in lib modules
-- Archive format detection by file extension + magic bytes
+- Archive format detection via `autocompress` (handles gzip, bzip2, xz, zstd transparently)
 - Strip top-level directory from archives if single-root
-- Preserve executable bits; default to `0755` for binaries if needed
+- Preserve executable bits from tar/zip archives
 - Use `camino-tempfile` for staging extraction
 - Use `reqwest` with `rustls-tls` (no native TLS)
 - Conditional requests use `If-None-Match` / `If-Modified-Since` headers
+- Timestamps use `jiff` for RFC 3339 compliance
+- Extraction enforces limits: max file count (10k), max size (10 GiB total, 1 GiB per file), max decompression ratio (100x)
 
-## Dependencies (per spec)
+## Dependencies
 
-Core:
-- `clap` (derive), `regex`, `tokio` (rt-multi-thread, macros)
-- `reqwest` (rustls-tls, json, stream), `reqwest-retry`
-- `serde`, `serde_json`, `camino`, `camino-tempfile`
-- `sha2`, `tar`, `zip`, `flate2`, `tracing`
+Core runtime:
+- **CLI & Config**: `clap` (derive, env), `regex`
+- **Async Runtime**: `tokio` (rt-multi-thread, macros)
+- **HTTP**: `reqwest` (rustls-tls, json, stream), `reqwest-middleware`, `reqwest-retry`
+- **Serialization**: `serde`, `serde_json`
+- **Paths & Files**: `camino`, `camino-tempfile`, `rustix` (fs features)
+- **Crypto**: `sha2`
+- **Archives**: `tar`, `zip` (deflate), `flate2`, `autocompress` (handles gzip, bzip2, xz, zstd)
+- **Time**: `jiff` (serde features)
+- **Errors**: `anyhow`, `thiserror`
+- **Logging**: `tracing`, `tracing-subscriber`
+- **Utilities**: `futures-util`, `bon`
 
-Optional (enable for additional archive formats):
-- `xz2` for tar.xz
-- `zstd` for tar.zst
+Dev dependencies (testing only):
+- `assert_cmd`, `assert_fs`, `assert_matches`, `insta`
+- `wiremock` (mock GitHub API)
+- `camino-tempfile-ext`
+- `bzip2`, `xz2`, `zstd` (test fixture generation)
