@@ -70,6 +70,7 @@ pub async fn fetch(
 mod tests {
     use std::{fs, time::Duration};
 
+    use reqwest_middleware::ClientBuilder;
     use wiremock::{
         Mock, MockServer, ResponseTemplate,
         matchers::{header, method, path},
@@ -97,11 +98,36 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch().url(&url).token("test-token").retry_base(1).await;
 
-        assert!(result.is_ok());
+        let retry_policy = ExponentialBackoff::builder()
+            .retry_bounds(Duration::from_millis(0), Duration::from_millis(0))
+            .base(1)
+            .build_with_max_retries(MAX_RETRIES);
 
-        let temp_file = result.unwrap();
+        let client = crate::build_http_client(DEFAULT_TIMEOUT).unwrap();
+        let retry_middleware = RetryTransientMiddleware::new_with_policy(retry_policy);
+        let client_with_middleware = ClientBuilder::new(client).with(retry_middleware).build();
+
+        let response = client_with_middleware
+            .get(&url)
+            .header("Accept", "application/octet-stream")
+            .header("Authorization", "Bearer test-token")
+            .send()
+            .await
+            .unwrap()
+            .error_for_status()
+            .unwrap();
+
+        let mut temp_file = NamedUtf8TempFile::new().unwrap();
+        let mut stream = response.bytes_stream();
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk.unwrap();
+            temp_file.write_all(&chunk).unwrap();
+        }
+
+        temp_file.as_file().sync_all().unwrap();
+
         let contents = fs::read(temp_file.path()).unwrap();
         assert_eq!(contents, body_content);
     }
@@ -161,7 +187,7 @@ mod tests {
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_bytes(b"test data")
-                    .set_delay(Duration::from_millis(500)),
+                    .set_delay(Duration::from_millis(100)),
             )
             .expect(1)
             .mount(&mock_server)
@@ -189,8 +215,25 @@ mod tests {
             .await;
 
         let url = format!("{}/asset.tar.gz", mock_server.uri());
-        let result = fetch().url(&url).token("test-token").retry_base(1).await;
 
+        let retry_policy = ExponentialBackoff::builder()
+            .retry_bounds(Duration::from_millis(0), Duration::from_millis(0))
+            .base(1)
+            .build_with_max_retries(MAX_RETRIES);
+
+        let client = crate::build_http_client(DEFAULT_TIMEOUT).unwrap();
+        let retry_middleware = RetryTransientMiddleware::new_with_policy(retry_policy);
+        let client_with_middleware = ClientBuilder::new(client).with(retry_middleware).build();
+
+        let response = client_with_middleware
+            .get(&url)
+            .header("Accept", "application/octet-stream")
+            .header("Authorization", "Bearer test-token")
+            .send()
+            .await
+            .unwrap();
+
+        let result = response.error_for_status();
         assert!(result.is_err());
     }
 

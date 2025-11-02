@@ -151,18 +151,18 @@ mod tests {
         let handle = thread::spawn(move || {
             tx.send("attempting").unwrap();
             let _guard2 =
-                acquire("testapp", Some(&lock_root), Some(Duration::from_secs(5))).unwrap();
+                acquire("testapp", Some(&lock_root), Some(Duration::from_secs(1))).unwrap();
             tx.send("acquired").unwrap();
         });
 
         assert_eq!(rx.recv().unwrap(), "attempting");
 
-        thread::sleep(Duration::from_millis(200));
+        thread::sleep(Duration::from_millis(50));
         assert!(rx.try_recv().is_err());
 
         drop(guard);
 
-        let result = rx.recv_timeout(Duration::from_secs(2));
+        let result = rx.recv_timeout(Duration::from_millis(500));
         assert_eq!(result.unwrap(), "acquired");
 
         handle.join().unwrap();
@@ -175,7 +175,7 @@ mod tests {
 
         let _guard = acquire("testapp", Some(lock_root), None).unwrap();
 
-        let result = acquire("testapp", Some(lock_root), Some(Duration::from_millis(500)));
+        let result = acquire("testapp", Some(lock_root), Some(Duration::from_millis(100)));
 
         assert!(result.is_err());
         if let Err(LockError::Busy { timeout_secs }) = result {
