@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-01-11
+
+### Fixed
+
+- Replace autocompress with niffler for XZ decompression support
+- Add Accept header to checksum download requests
+- Use GitHub asset API URL with octet-stream header
+
+### Changed
+
+- Upgrade to Rust edition 2024 and use let-chains syntax
+- Enable cargo-dist updater for automated release infrastructure updates
+
 ## [0.1.1] - 2025-11-01
 
 ### Changed
