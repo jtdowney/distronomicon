@@ -254,10 +254,11 @@ async fn fresh_install_without_existing_directories() {
 async fn unlock_removes_stuck_lock_file() {
     let temp_dir = tempdir().unwrap();
     let state_dir = temp_dir.child("state");
+    let app_dir = state_dir.join("testapp");
 
-    fs::create_dir_all(&state_dir).unwrap();
+    fs::create_dir_all(&app_dir).unwrap();
 
-    let lock_file = state_dir.join("distronomicon-testapp.lock");
+    let lock_file = app_dir.join("lock");
     fs::write(&lock_file, "").unwrap();
     assert!(lock_file.exists());
 

@@ -19,20 +19,22 @@ pub type Result<T> = std::result::Result<T, LockError>;
 
 /// RAII guard for an exclusive file lock.
 ///
-/// The lock is automatically released when the guard is dropped.
+/// The lock is automatically released and the lock file is removed when the guard is dropped.
 pub struct LockGuard {
     file: File,
+    path: Utf8PathBuf,
 }
 
 impl Drop for LockGuard {
     fn drop(&mut self) {
         let _ = self.file.unlock();
+        let _ = fs::remove_file(&self.path);
     }
 }
 
 fn lock_path(app: &str, lock_root: Option<&Utf8Path>) -> Utf8PathBuf {
     match lock_root {
-        Some(root) => root.join(format!("distronomicon-{app}.lock")),
+        Some(root) => root.join(app).join("lock"),
         None => Utf8PathBuf::from(format!("/var/lock/distronomicon-{app}.lock")),
     }
 }
@@ -83,7 +85,10 @@ pub fn acquire(
 
     loop {
         if let Ok(()) = file.try_lock() {
-            return Ok(LockGuard { file });
+            return Ok(LockGuard {
+                file,
+                path: lock_path.clone(),
+            });
         }
 
         if start.elapsed() >= timeout {
@@ -199,7 +204,7 @@ mod tests {
 
         let guard = acquire("testapp", Some(lock_root), None).unwrap();
 
-        let lock_file = lock_root.join("distronomicon-testapp.lock");
+        let lock_file = lock_root.join("testapp").join("lock");
         assert!(lock_file.exists());
 
         drop(guard);
@@ -230,5 +235,20 @@ mod tests {
 
         drop(guard1);
         drop(guard2);
+    }
+
+    #[test]
+    fn test_lock_file_cleaned_up_on_drop() {
+        let temp_dir = tempdir().unwrap();
+        let lock_root = temp_dir.path();
+
+        let guard = acquire("testapp", Some(lock_root), None).unwrap();
+
+        let lock_file = lock_root.join("testapp").join("lock");
+        assert!(lock_file.exists());
+
+        drop(guard);
+
+        assert!(!lock_file.exists());
     }
 }
