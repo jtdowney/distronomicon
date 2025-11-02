@@ -44,6 +44,8 @@ pub enum ExtractError {
     Io(#[from] io::Error),
     #[error("zip error: {0}")]
     Zip(#[from] zip::result::ZipError),
+    #[error("decompression error: {0}")]
+    Decompress(#[from] niffler::Error),
 }
 
 pub type Result<T> = std::result::Result<T, ExtractError>;
@@ -250,7 +252,8 @@ fn unpack_tar(
     let src = src.as_ref();
     let dest_dir = dest_dir.as_ref();
 
-    let reader = autocompress::autodetect_open(src.as_std_path())?;
+    let file = File::open(src)?;
+    let (reader, _format) = niffler::get_reader(Box::new(file))?;
     let mut archive = tar::Archive::new(reader);
 
     let mut total_bytes = 0u64;
@@ -762,7 +765,12 @@ mod tests {
         let tar_xz_path = temp_dir.child("archive.tar.xz");
 
         let file = File::create(&tar_xz_path).unwrap();
-        let encoder = xz2::write::XzEncoder::new(file, 6);
+        let encoder = niffler::get_writer(
+            Box::new(file),
+            niffler::compression::Format::Lzma,
+            niffler::Level::Six,
+        )
+        .unwrap();
         let mut tar = tar::Builder::new(encoder);
 
         let mut header = tar::Header::new_gnu();
@@ -771,7 +779,8 @@ mod tests {
         header.set_mode(0o644);
         header.set_cksum();
         tar.append_data(&mut header, "file.txt", &data[..]).unwrap();
-        tar.into_inner().unwrap().finish().unwrap();
+        tar.into_inner().unwrap();
+        // niffler writer finalizes on drop
 
         let extract_dir = temp_dir.child("extract");
         extract_dir.create_dir_all().unwrap();
