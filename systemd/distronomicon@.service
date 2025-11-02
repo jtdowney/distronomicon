@@ -5,22 +5,55 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-EnvironmentFile=-/etc/distronomicon/%i.conf
+
+# Configuration: Customize via `systemctl edit distronomicon@<app>.service`
+#
+# To configure, run: sudo systemctl edit distronomicon@myapp.service
+# Then set the REQUIRED variables and any optional ones you need:
+#
+# [Service]
+# Environment="REPO=owner/myapp"
+# Environment="PATTERN=myapp-.*\.tar\.gz"
+# Environment="CHECKSUM_PATTERN_ARG=--checksum-pattern SHA256SUMS"
+# Environment="RESTART_COMMAND_ARG=--restart-command 'systemctl restart myapp'"
+
+# REQUIRED: Set these in your drop-in configuration
+# Environment="REPO=owner/repo"
+# Environment="PATTERN=myapp-.*\.tar\.gz"
+
+# Optional: GitHub API token (required for private repos or higher rate limits)
+# Environment="GITHUB_TOKEN=ghp_..."
+
+# Optional arguments (empty by default, include full flag + value when setting)
+Environment="INSTALL_ROOT_ARG="
+Environment="CHECKSUM_PATTERN_ARG="
+Environment="STATE_DIRECTORY_ARG="
+Environment="RESTART_COMMAND_ARG="
+Environment="RETAIN_ARG="
+Environment="GITHUB_HOST_ARG="
+Environment="ALLOW_PRERELEASE_ARG="
+
+# Examples for drop-in overrides:
+# Environment="INSTALL_ROOT_ARG=--install-root /custom/path"
+# Environment="CHECKSUM_PATTERN_ARG=--checksum-pattern SHA256SUMS"
+# Environment="STATE_DIRECTORY_ARG=--state-directory /var/lib/distronomicon"
+# Environment="RESTART_COMMAND_ARG=--restart-command 'systemctl restart myapp'"
+# Environment="RETAIN_ARG=--retain 5"
+# Environment="GITHUB_HOST_ARG=--github-host github.example.com"
+# Environment="ALLOW_PRERELEASE_ARG=--allow-prerelease"
+
 ExecStart=/usr/local/bin/distronomicon \
   --app %i \
-  ${INSTALL_ROOT:+--install-root ${INSTALL_ROOT}} \
+  ${INSTALL_ROOT_ARG} \
   update \
   --repo ${REPO} \
   --pattern ${PATTERN} \
-  ${CHECKSUM_PATTERN:+--checksum-pattern ${CHECKSUM_PATTERN}} \
-  --state-directory ${STATE_DIRECTORY:-/var/lib/distronomicon} \
-  ${RESTART_COMMAND:+--restart-command ${RESTART_COMMAND}} \
-  ${RETAIN:+--retain ${RETAIN}} \
-  ${GITHUB_HOST:+--github-host ${GITHUB_HOST}} \
-  ${ALLOW_PRERELEASE:+--allow-prerelease}
-
-# GitHub token can be set in environment file
-Environment="GITHUB_TOKEN="
+  ${CHECKSUM_PATTERN_ARG} \
+  ${STATE_DIRECTORY_ARG} \
+  ${RESTART_COMMAND_ARG} \
+  ${RETAIN_ARG} \
+  ${GITHUB_HOST_ARG} \
+  ${ALLOW_PRERELEASE_ARG}
 
 # Restart on failure with backoff
 Restart=on-failure
@@ -30,7 +63,9 @@ RestartSec=5m
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ReadWritePaths=/opt /var/lib/distronomicon
+StateDirectory=distronomicon
+StateDirectoryMode=0750
+ReadWritePaths=/opt
 ProtectHome=true
 
 [Install]
