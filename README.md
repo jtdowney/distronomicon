@@ -119,7 +119,7 @@ systemctl list-timers distronomicon@*
 - `--skip-verification` - Skip checksum verification (not recommended)
 - `--retain N` - Keep N old releases after update (default: 3)
 - `--allow-prerelease` - Include prerelease versions
-- `--github-host` - Use GitHub Enterprise (default: `api.github.com`)
+- `--github-host` - Use GitHub Enterprise (default: `https://api.github.com`)
 - `-v`, `-vv` - Increase logging verbosity
 
 ## License
