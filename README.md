@@ -122,6 +122,43 @@ systemctl list-timers distronomicon@*
 - `--github-host` - Use GitHub Enterprise (default: `https://api.github.com`)
 - `-v`, `-vv` - Increase logging verbosity
 
+## Future Ideas
+
+Features under consideration for future development
+
+### Safety & Reliability
+
+- **Dry-run mode** - Preview updates without making changes (`--dry-run`)
+- **Rollback command** - Revert to previous releases when issues are discovered
+- **Version pinning** - Lock to specific versions during maintenance windows
+- **Health checks** - Doctor command to validate symlink integrity
+- **Update policies** - Enforce semantic constraints (max major version, maintenance windows)
+
+### Observability
+
+- **Metrics** - Prometheus/OpenTelemetry exports for monitoring
+- **Audit logs** - Structured event logs (JSONL) for debugging
+- **Notifications** - Webhook/Slack/email alerts for update results
+- **History queries** - Commands to inspect past update attempts
+
+### Flexibility & Extensibility
+
+- **Pluggable sources** - Support GitLab, S3, OCI registries, generic HTTP
+- **Additional checksums** - BLAKE2, BLAKE3, SHA-512 algorithm support
+- **Signature verification** - Sigstore/cosign or GPG signature checks
+- **Custom extraction** - Flexible archive handling and post-install hooks
+- **Systemd generation** - Generate service/timer templates per app
+
+### Fleet & Orchestration
+
+- **Staggered updates** - Coordinate batch updates across multiple hosts
+- **Control API** - REST/gRPC daemon for remote management
+
+### Networking & Resilience
+
+- **Resumable downloads** - Continue interrupted downloads of large artifacts
+- **Mirror support** - Configure fallback sources for high availability
+
 ## License
 
 MIT
