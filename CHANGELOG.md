@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2025-11-02
+
+### Fixed
+
+- Auto-remove lock file and use app subdirectory for state isolation
+- Fix github-host default value format in documentation
+
+### Changed
+
+- Reduce delays and timeouts in tests for faster test execution
+
 ## [0.1.2] - 2025-01-11
 
 ### Fixed
