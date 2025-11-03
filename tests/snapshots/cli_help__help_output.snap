@@ -13,7 +13,7 @@ Commands:
 
 Options:
       --app <APP>                    Application name (used for directory structure under install root)
-      --install-root <INSTALL_ROOT>  Root directory for installations (creates <root>/<app>/{bin,releases,staging}) [env: PREFIX=] [default: /opt]
+      --install-root <INSTALL_ROOT>  Root directory for installations (creates <root>/<app>/{bin,releases,staging}) [env: DISTRONOMICON_INSTALL_ROOT=] [default: /opt]
       --http-timeout <HTTP_TIMEOUT>  HTTP request timeout in seconds (applies to downloads, GitHub API, checksum verification) [default: 300]
   -v, --verbose...                   Increase logging verbosity (-v for debug, -vv for trace)
   -h, --help                         Print help

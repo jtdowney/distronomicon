@@ -8,23 +8,23 @@ Usage: distronomicon --app <APP> update [OPTIONS] --repo <REPO> --pattern <PATTE
 
 Options:
       --repo <REPO>
-          GitHub repository in owner/repo format (e.g., 'rust-lang/rust')
+          GitHub repository in owner/repo format (e.g., 'rust-lang/rust') [env: DISTRONOMICON_REPO=]
       --pattern <PATTERN>
-          Regex pattern to match release asset filename (e.g., '.*\.tar\.gz$')
+          Regex pattern to match release asset filename (e.g., '.*\.tar\.gz$') [env: DISTRONOMICON_PATTERN=]
       --state-directory <STATE_DIRECTORY>
           Directory for storing state.json with ETags and timestamps [env: STATE_DIRECTORY=]
       --checksum-pattern <CHECKSUM_PATTERN>
-          Regex pattern to match checksum file (e.g., 'SHA256SUMS'); required unless --skip-verification
+          Regex pattern to match checksum file (e.g., 'SHA256SUMS'); required unless --skip-verification [env: DISTRONOMICON_CHECKSUM_PATTERN=]
       --github-token <TOKEN>
           GitHub API token (required for private repos or higher rate limits) [env: GITHUB_TOKEN]
       --github-host <HOST>
           GitHub API hostname (use for GitHub Enterprise) [env: GITHUB_HOST=] [default: https://api.github.com]
       --allow-prerelease
-          Include prerelease versions when checking for updates
+          Include prerelease versions when checking for updates [env: DISTRONOMICON_ALLOW_PRERELEASE=]
       --restart-command <RESTART_COMMAND>
-          Shell command to execute after successful update (e.g., 'systemctl restart myapp')
+          Shell command to execute after successful update (e.g., 'systemctl restart myapp') [env: DISTRONOMICON_RESTART_COMMAND=]
       --retain <RETAIN>
-          Number of old releases to keep after update (older releases are pruned) [default: 3]
+          Number of old releases to keep after update (older releases are pruned) [env: DISTRONOMICON_RETAIN=] [default: 3]
       --skip-verification
           Skip checksum verification (not recommended; use only for testing)
       --force-unlock
