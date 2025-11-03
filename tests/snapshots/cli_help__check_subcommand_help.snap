@@ -8,7 +8,7 @@ Usage: distronomicon --app <APP> check [OPTIONS] --repo <REPO> --state-directory
 
 Options:
       --repo <REPO>
-          GitHub repository in owner/repo format (e.g., 'rust-lang/rust')
+          GitHub repository in owner/repo format (e.g., 'rust-lang/rust') [env: DISTRONOMICON_REPO=]
       --state-directory <STATE_DIRECTORY>
           Directory for storing state.json with ETags and timestamps [env: STATE_DIRECTORY=]
       --github-token <TOKEN>
@@ -16,6 +16,6 @@ Options:
       --github-host <HOST>
           GitHub API hostname (use for GitHub Enterprise) [env: GITHUB_HOST=] [default: https://api.github.com]
       --allow-prerelease
-          Include prerelease versions when checking for updates
+          Include prerelease versions when checking for updates [env: DISTRONOMICON_ALLOW_PRERELEASE=]
   -h, --help
           Print help

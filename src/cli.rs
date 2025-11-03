@@ -40,7 +40,7 @@ pub struct Args {
 
     #[arg(
         long,
-        env = "PREFIX",
+        env = "DISTRONOMICON_INSTALL_ROOT",
         default_value = DEFAULT_INSTALL_ROOT,
         help = "Root directory for installations (creates <root>/<app>/{bin,releases,staging})"
     )]
@@ -97,6 +97,7 @@ pub struct GitHubConfig {
 
     #[arg(
         long = "allow-prerelease",
+        env = "DISTRONOMICON_ALLOW_PRERELEASE",
         help = "Include prerelease versions when checking for updates"
     )]
     pub allow_prerelease: bool,
@@ -106,6 +107,7 @@ pub struct GitHubConfig {
 pub struct CheckArgs {
     #[arg(
         long,
+        env = "DISTRONOMICON_REPO",
         help = "GitHub repository in owner/repo format (e.g., 'rust-lang/rust')"
     )]
     pub repo: String,
@@ -125,12 +127,14 @@ pub struct CheckArgs {
 pub struct UpdateArgs {
     #[arg(
         long,
+        env = "DISTRONOMICON_REPO",
         help = "GitHub repository in owner/repo format (e.g., 'rust-lang/rust')"
     )]
     pub repo: String,
 
     #[arg(
         long,
+        env = "DISTRONOMICON_PATTERN",
         help = "Regex pattern to match release asset filename (e.g., '.*\\.tar\\.gz$')"
     )]
     pub pattern: String,
@@ -144,6 +148,7 @@ pub struct UpdateArgs {
 
     #[arg(
         long,
+        env = "DISTRONOMICON_CHECKSUM_PATTERN",
         required_unless_present = "skip_verification",
         help = "Regex pattern to match checksum file (e.g., 'SHA256SUMS'); required unless --skip-verification"
     )]
@@ -154,12 +159,14 @@ pub struct UpdateArgs {
 
     #[arg(
         long,
+        env = "DISTRONOMICON_RESTART_COMMAND",
         help = "Shell command to execute after successful update (e.g., 'systemctl restart myapp')"
     )]
     pub restart_command: Option<String>,
 
     #[arg(
         long,
+        env = "DISTRONOMICON_RETAIN",
         default_value = "3",
         help = "Number of old releases to keep after update (older releases are pruned)"
     )]
