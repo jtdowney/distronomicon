@@ -143,6 +143,8 @@ sudo systemctl enable --now distronomicon@myapp.timer
 - `DISTRONOMICON_INSTALL_ROOT` - Install base directory (default: `/opt`)
 - `DISTRONOMICON_ALLOW_PRERELEASE` - Include prereleases (set to `true`)
 
+**⚠️ Note:** If you change `DISTRONOMICON_INSTALL_ROOT`, you must also override `ReadWritePaths` in your drop-in configuration to grant write access to the custom location (required by `ProtectSystem=strict`).
+
 **Example with optional variables:**
 
 ```ini
@@ -154,6 +156,7 @@ Environment="DISTRONOMICON_CHECKSUM_PATTERN=SHA256SUMS"
 Environment="DISTRONOMICON_RESTART_COMMAND=systemctl restart myapp"
 Environment="DISTRONOMICON_RETAIN=5"
 Environment="DISTRONOMICON_INSTALL_ROOT=/custom/opt"
+ReadWritePaths=/custom/opt
 ```
 
 ### Customizing the Timer

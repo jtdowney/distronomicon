@@ -29,6 +29,13 @@ Type=oneshot
 # - DISTRONOMICON_INSTALL_ROOT: Install base directory (default: /opt)
 # - DISTRONOMICON_ALLOW_PRERELEASE: Include prereleases (set to "true")
 #
+# NOTE: If you change DISTRONOMICON_INSTALL_ROOT, you must also override
+# ReadWritePaths to grant access to the custom location:
+#
+# [Service]
+# Environment="DISTRONOMICON_INSTALL_ROOT=/custom/path"
+# ReadWritePaths=/custom/path
+#
 # Example configuration with optional variables:
 # [Service]
 # Environment="DISTRONOMICON_REPO=owner/myapp"
