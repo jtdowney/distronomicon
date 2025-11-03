@@ -9,51 +9,36 @@ Type=oneshot
 # Configuration: Customize via `systemctl edit distronomicon@<app>.service`
 #
 # To configure, run: sudo systemctl edit distronomicon@myapp.service
-# Then set the REQUIRED variables and any optional ones you need:
+# Then set the REQUIRED environment variables:
 #
 # [Service]
-# Environment="REPO=owner/myapp"
-# Environment="PATTERN=myapp-.*\.tar\.gz"
-# Environment="CHECKSUM_PATTERN_ARG=--checksum-pattern SHA256SUMS"
-# Environment="RESTART_COMMAND_ARG=--restart-command 'systemctl restart myapp'"
-
-# REQUIRED: Set these in your drop-in configuration
-# Environment="REPO=owner/repo"
-# Environment="PATTERN=myapp-.*\.tar\.gz"
-
-# Optional: GitHub API token (required for private repos or higher rate limits)
+# Environment="DISTRONOMICON_REPO=owner/myapp"
+# Environment="DISTRONOMICON_PATTERN=myapp-.*\.tar\.gz"
+#
+# REQUIRED environment variables:
+# - DISTRONOMICON_REPO: GitHub repository in owner/repo format
+# - DISTRONOMICON_PATTERN: Regex pattern to match release assets
+#
+# Optional environment variables:
+# - GITHUB_TOKEN: GitHub API token (for private repos or higher rate limits)
+# - GITHUB_HOST: GitHub Enterprise host (default: https://api.github.com)
+# - STATE_DIRECTORY: State directory (default: auto-set by systemd)
+# - DISTRONOMICON_CHECKSUM_PATTERN: Checksum file pattern (e.g., SHA256SUMS)
+# - DISTRONOMICON_RESTART_COMMAND: Command to run after update
+# - DISTRONOMICON_RETAIN: Number of old releases to keep (default: 3)
+# - DISTRONOMICON_INSTALL_ROOT: Install base directory (default: /opt)
+# - DISTRONOMICON_ALLOW_PRERELEASE: Include prereleases (set to "true")
+#
+# Example configuration with optional variables:
+# [Service]
+# Environment="DISTRONOMICON_REPO=owner/myapp"
+# Environment="DISTRONOMICON_PATTERN=myapp-.*\.tar\.gz"
 # Environment="GITHUB_TOKEN=ghp_..."
+# Environment="DISTRONOMICON_CHECKSUM_PATTERN=SHA256SUMS"
+# Environment="DISTRONOMICON_RESTART_COMMAND=systemctl restart myapp"
+# Environment="DISTRONOMICON_RETAIN=5"
 
-# Optional arguments (empty by default, include full flag + value when setting)
-Environment="INSTALL_ROOT_ARG="
-Environment="CHECKSUM_PATTERN_ARG="
-Environment="STATE_DIRECTORY_ARG="
-Environment="RESTART_COMMAND_ARG="
-Environment="RETAIN_ARG="
-Environment="GITHUB_HOST_ARG="
-Environment="ALLOW_PRERELEASE_ARG="
-
-# Examples for drop-in overrides:
-# Environment="INSTALL_ROOT_ARG=--install-root /custom/path"
-# Environment="CHECKSUM_PATTERN_ARG=--checksum-pattern SHA256SUMS"
-# Environment="STATE_DIRECTORY_ARG=--state-directory /var/lib/distronomicon"
-# Environment="RESTART_COMMAND_ARG=--restart-command 'systemctl restart myapp'"
-# Environment="RETAIN_ARG=--retain 5"
-# Environment="GITHUB_HOST_ARG=--github-host github.example.com"
-# Environment="ALLOW_PRERELEASE_ARG=--allow-prerelease"
-
-ExecStart=/usr/local/bin/distronomicon \
-  --app %i \
-  ${INSTALL_ROOT_ARG} \
-  update \
-  --repo ${REPO} \
-  --pattern ${PATTERN} \
-  ${CHECKSUM_PATTERN_ARG} \
-  ${STATE_DIRECTORY_ARG} \
-  ${RESTART_COMMAND_ARG} \
-  ${RETAIN_ARG} \
-  ${GITHUB_HOST_ARG} \
-  ${ALLOW_PRERELEASE_ARG}
+ExecStart=/usr/local/bin/distronomicon --app %i update
 
 # Restart on failure with backoff
 Restart=on-failure

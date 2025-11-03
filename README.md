@@ -96,21 +96,88 @@ Or use `--github-token` flag.
 
 ## Systemd Timer
 
-Example service and timer files are in the `systemd/` directory. To set up:
+Example service and timer files are in the `systemd/` directory.
+
+### Setup
+
+1. Copy the systemd files:
 
 ```bash
 sudo cp systemd/distronomicon@.{service,timer} /etc/systemd/system/
-sudo mkdir -p /etc/distronomicon
-# Create /etc/distronomicon/myapp.conf with environment variables
 sudo systemctl daemon-reload
+```
+
+2. Configure the service using a drop-in override:
+
+```bash
+sudo systemctl edit distronomicon@myapp.service
+```
+
+3. Add the required environment variables:
+
+```ini
+[Service]
+Environment="DISTRONOMICON_REPO=owner/repo"
+Environment="DISTRONOMICON_PATTERN=myapp-.*\.tar\.gz"
+```
+
+4. Enable and start the timer:
+
+```bash
 sudo systemctl enable --now distronomicon@myapp.timer
 ```
+
+### Environment Variables
+
+**Required:**
+- `DISTRONOMICON_REPO` - GitHub repository in `owner/repo` format
+- `DISTRONOMICON_PATTERN` - Regex pattern to match release assets
+
+**Optional:**
+- `GITHUB_TOKEN` - GitHub API token (for private repos or higher rate limits)
+- `GITHUB_HOST` - GitHub Enterprise host (default: `https://api.github.com`)
+- `STATE_DIRECTORY` - State directory (auto-set by systemd via `StateDirectory=`)
+- `DISTRONOMICON_CHECKSUM_PATTERN` - Checksum file pattern (e.g., `SHA256SUMS`)
+- `DISTRONOMICON_RESTART_COMMAND` - Command to run after update (e.g., `systemctl restart myapp`)
+- `DISTRONOMICON_RETAIN` - Number of old releases to keep (default: `3`)
+- `DISTRONOMICON_INSTALL_ROOT` - Install base directory (default: `/opt`)
+- `DISTRONOMICON_ALLOW_PRERELEASE` - Include prereleases (set to `true`)
+
+**Example with optional variables:**
+
+```ini
+[Service]
+Environment="DISTRONOMICON_REPO=owner/repo"
+Environment="DISTRONOMICON_PATTERN=myapp-.*\.tar\.gz"
+Environment="GITHUB_TOKEN=ghp_..."
+Environment="DISTRONOMICON_CHECKSUM_PATTERN=SHA256SUMS"
+Environment="DISTRONOMICON_RESTART_COMMAND=systemctl restart myapp"
+Environment="DISTRONOMICON_RETAIN=5"
+Environment="DISTRONOMICON_INSTALL_ROOT=/custom/opt"
+```
+
+### Customizing the Timer
+
+By default, the timer checks every 3 minutes. To change the interval:
+
+```bash
+sudo systemctl edit distronomicon@myapp.timer
+```
+
+```ini
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=10m
+```
+
+### Monitoring
 
 Check status:
 
 ```bash
 systemctl status distronomicon@myapp.timer
 systemctl list-timers distronomicon@*
+journalctl -u distronomicon@myapp.service
 ```
 
 ## Options
