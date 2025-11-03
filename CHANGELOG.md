@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-11-02
+
+### Changed
+
+- **BREAKING**: Environment variables now use `DISTRONOMICON_` prefix for tool-specific settings
+  - `PREFIX` renamed to `DISTRONOMICON_INSTALL_ROOT`
+  - New variables: `DISTRONOMICON_REPO`, `DISTRONOMICON_PATTERN`, `DISTRONOMICON_CHECKSUM_PATTERN`, `DISTRONOMICON_RESTART_COMMAND`, `DISTRONOMICON_RETAIN`, `DISTRONOMICON_ALLOW_PRERELEASE`
+  - Standard variables remain unprefixed: `GITHUB_TOKEN`, `GITHUB_HOST`, `STATE_DIRECTORY`
+  - Existing systemd configurations must be updated with new variable names
+
+### Added
+
+- Systemd service files now included in distribution archives
+
 ## [0.1.3] - 2025-11-02
 
 ### Fixed
