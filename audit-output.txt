@@ -1,16 +1,16 @@
-[0m[0m[1m[32m    Fetching[0m advisory database from `https://github.com/RustSec/advisory-db.git`
-[0m[0m[1m[32m      Loaded[0m 862 security advisories (from /home/runner/.cargo/advisory-db)
-[0m[0m[1m[32m    Updating[0m crates.io index
-[0m[0m[1m[32m    Scanning[0m Cargo.lock for vulnerabilities (316 crate dependencies)
-[0m[0m[1m[33mCrate:    [0m instant
-[0m[0m[1m[33mVersion:  [0m 0.1.13
-[0m[0m[1m[33mWarning:  [0m unmaintained
-[0m[0m[1m[33mTitle:    [0m `instant` is unmaintained
-[0m[0m[1m[33mDate:     [0m 2024-09-01
-[0m[0m[1m[33mID:       [0m RUSTSEC-2024-0384
-[0m[0m[1m[33mURL:      [0m https://rustsec.org/advisories/RUSTSEC-2024-0384
-[0m[0m[1m[33mDependency tree:
-[0minstant 0.1.13
+    Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
+      Loaded 862 security advisories (from /home/runner/.cargo/advisory-db)
+    Updating crates.io index
+    Scanning Cargo.lock for vulnerabilities (316 crate dependencies)
+Crate:     instant
+Version:   0.1.13
+Warning:   unmaintained
+Title:     `instant` is unmaintained
+Date:      2024-09-01
+ID:        RUSTSEC-2024-0384
+URL:       https://rustsec.org/advisories/RUSTSEC-2024-0384
+Dependency tree:
+instant 0.1.13
 ├── parking_lot_core 0.8.6
 │   └── parking_lot 0.11.2
 │       ├── wasm-timer 0.2.5
@@ -19,4 +19,4 @@
 │       └── reqwest-retry 0.7.0
 └── parking_lot 0.11.2
 
-[0m[0m[1m[33mwarning:[0m 1 allowed warning found
+warning: 1 allowed warning found
