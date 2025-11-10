@@ -4,10 +4,13 @@
 
 ### Changes
 ```
-[1m[92m    Updating[0m crates.io index
-[1m[92m     Locking[0m 2 packages to latest Rust 1.91.0 compatible versions
-[1m[92m    Updating[0m iri-string v0.7.8 -> v0.7.9
-[1m[92m    Updating[0m rustls v0.23.34 -> v0.23.35
+    Updating crates.io index
+     Locking 5 packages to latest Rust 1.91.0 compatible versions
+    Updating cc v1.2.44 -> v1.2.45
+    Updating jiff v0.2.15 -> v0.2.16
+    Updating jiff-static v0.2.15 -> v0.2.16
+    Updating quote v1.0.41 -> v1.0.42
+    Updating syn v2.0.108 -> v2.0.109
 ```
 
 ## Security Audit
