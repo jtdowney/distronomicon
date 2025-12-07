@@ -5,26 +5,16 @@
 ### Changes
 ```
     Updating crates.io index
-     Locking 19 packages to latest Rust 1.91.1 compatible versions
-    Updating cc v1.2.47 -> v1.2.48
-    Updating crc v3.3.0 -> v3.4.0
-    Updating http v1.3.1 -> v1.4.0
-    Updating insta v1.44.1 -> v1.44.3
-    Updating js-sys v0.3.82 -> v0.3.83
-    Updating rustls-pki-types v1.13.0 -> v1.13.1
-    Updating tower-http v0.6.6 -> v0.6.7
-    Updating tracing v0.1.41 -> v0.1.43
-    Updating tracing-attributes v0.1.30 -> v0.1.31
-    Updating tracing-core v0.1.34 -> v0.1.35
-    Updating tracing-subscriber v0.3.20 -> v0.3.22
-    Updating wasm-bindgen v0.2.105 -> v0.2.106
-    Updating wasm-bindgen-futures v0.4.55 -> v0.4.56
-    Updating wasm-bindgen-macro v0.2.105 -> v0.2.106
-    Updating wasm-bindgen-macro-support v0.2.105 -> v0.2.106
-    Updating wasm-bindgen-shared v0.2.105 -> v0.2.106
-    Updating web-sys v0.3.82 -> v0.3.83
-    Updating zerocopy v0.8.28 -> v0.8.30
-    Updating zerocopy-derive v0.8.28 -> v0.8.30
+     Locking 9 packages to latest Rust 1.91.1 compatible versions
+    Updating cc v1.2.48 -> v1.2.49
+    Updating hyper-util v0.1.18 -> v0.1.19
+    Updating libc v0.2.177 -> v0.2.178
+    Updating libz-rs-sys v0.5.2 -> v0.5.3
+    Updating log v0.4.28 -> v0.4.29
+    Updating mio v1.1.0 -> v1.1.1
+    Updating zerocopy v0.8.30 -> v0.8.31
+    Updating zerocopy-derive v0.8.30 -> v0.8.31
+    Updating zlib-rs v0.5.2 -> v0.5.3
 note: pass `--verbose` to see 2 unchanged dependencies behind latest
 ```
 
