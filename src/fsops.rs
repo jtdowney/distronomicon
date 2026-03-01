@@ -132,7 +132,9 @@ pub fn discover_executables(dir: impl AsRef<Utf8Path>) -> Result<Vec<Utf8PathBuf
     }
 
     let base = dir.as_ref();
-    walk(base, base).map_err(Into::into)
+    let mut executables = walk(base, base)?;
+    executables.sort();
+    Ok(executables)
 }
 
 /// Creates symlinks in `bin_dir` for all executables found in `release_dir`.
@@ -709,7 +711,7 @@ mod tests {
         assert!(symlink.exists());
 
         let target = fs::read_link(&symlink).unwrap();
-        assert!(target.to_str().unwrap().contains("bin/cli"));
+        assert!(target.to_str().unwrap().contains("tools/cli"));
     }
 
     #[test]
