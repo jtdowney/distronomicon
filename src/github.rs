@@ -1,3 +1,5 @@
+use std::cmp::Reverse;
+
 use anyhow::Result;
 use jiff::Timestamp;
 use regex::Regex;
@@ -117,7 +119,7 @@ pub async fn fetch_latest(
     let release = if allow_prerelease {
         let mut releases = response.json::<Vec<Release>>().await?;
         releases.retain(|r| !r.draft);
-        releases.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        releases.sort_by_key(|r| Reverse(r.created_at));
         releases
             .into_iter()
             .next()

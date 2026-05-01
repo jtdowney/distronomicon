@@ -198,14 +198,13 @@ fn unpack_zip(
                 )));
             }
 
-            if compressed_size > 0 {
-                let ratio = uncompressed_size / compressed_size;
-                if ratio > limits.max_decompression_ratio {
-                    return Err(ExtractError::LimitExceeded(format!(
-                        "decompression ratio exceeded: {} (limit: {})",
-                        ratio, limits.max_decompression_ratio
-                    )));
-                }
+            if let Some(ratio) = uncompressed_size.checked_div(compressed_size)
+                && ratio > limits.max_decompression_ratio
+            {
+                return Err(ExtractError::LimitExceeded(format!(
+                    "decompression ratio exceeded: {} (limit: {})",
+                    ratio, limits.max_decompression_ratio
+                )));
             }
 
             if total_bytes + uncompressed_size > limits.max_total_extracted_bytes {
