@@ -1,4 +1,5 @@
 use std::{
+    fmt::Write as _,
     fs,
     io::Write as _,
     os::unix::{self, fs::PermissionsExt},
@@ -72,7 +73,13 @@ fn create_tar_gz_with_binary(app_name: &str, content: &[u8]) -> Vec<u8> {
 fn calculate_sha256(data: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(data);
-    format!("{:x}", hasher.finalize())
+    hasher
+        .finalize()
+        .iter()
+        .fold(String::new(), |mut hex, byte| {
+            let _ = write!(hex, "{byte:02x}");
+            hex
+        })
 }
 
 fn create_checksum_file(filename: &str, hash: &str) -> String {

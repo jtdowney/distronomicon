@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fs::File, io};
+use std::{
+    collections::HashMap,
+    fmt::Write as _,
+    fs::File,
+    io::{self, Read},
+};
 
 use camino::Utf8Path;
 use sha2::{Digest, Sha256};
@@ -133,9 +138,20 @@ pub async fn fetch_and_verify_checksum(
     let actual_hex = tokio::task::spawn_blocking(move || {
         let mut file = File::open(&path)?;
         let mut hasher = Sha256::new();
-        io::copy(&mut file, &mut hasher)?;
+        let mut buffer = [0u8; 8192];
+        loop {
+            let n = file.read(&mut buffer)?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buffer[..n]);
+        }
         let actual_hash = hasher.finalize();
-        Ok::<String, io::Error>(format!("{actual_hash:x}"))
+        let actual_hex = actual_hash.iter().fold(String::new(), |mut hex, byte| {
+            let _ = write!(hex, "{byte:02x}");
+            hex
+        });
+        Ok::<String, io::Error>(actual_hex)
     })
     .await
     .map_err(io::Error::other)??;

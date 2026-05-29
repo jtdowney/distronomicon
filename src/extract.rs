@@ -427,7 +427,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_reject_absolute_path_zip() {
+    fn test_absolute_path_zip_sanitized_within_dest() {
         let temp_dir = tempdir().unwrap();
         let zip_path = temp_dir.child("evil.zip");
 
@@ -438,18 +438,18 @@ mod tests {
             .compression_method(zip::CompressionMethod::Stored);
         zip.start_file("/etc/passwd", options).unwrap();
         zip.write_all(b"evil content").unwrap();
+        zip.start_file("readme.txt", options).unwrap();
+        zip.write_all(b"safe").unwrap();
         zip.finish().unwrap();
 
         let extract_dir = temp_dir.child("extract");
         extract_dir.create_dir_all().unwrap();
 
-        let result = unpack(&zip_path, &extract_dir);
-        assert!(result.is_err());
-        if let Err(ExtractError::PathValidation(msg)) = result {
-            assert!(msg.contains("invalid entry path"));
-        } else {
-            panic!("Expected PathValidation error, got: {result:?}");
-        }
+        unpack(&zip_path, &extract_dir).unwrap();
+
+        let extracted = extract_dir.join("etc/passwd");
+        assert!(extracted.exists());
+        assert_eq!(fs::read(&extracted).unwrap(), b"evil content");
     }
 
     #[test]
