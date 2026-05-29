@@ -84,7 +84,8 @@ pub fn save_atomic<P: AsRef<Utf8Path>>(path: P, state: &State) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use assert_matches::assert_matches;
+    use std::assert_matches;
+
     use camino_tempfile::tempdir;
     use camino_tempfile_ext::prelude::*;
 

@@ -367,9 +367,8 @@ pub fn prune_old_releases(
 
 #[cfg(test)]
 mod tests {
-    use std::{os::unix, thread, time::Duration};
+    use std::{assert_matches, os::unix, thread, time::Duration};
 
-    use assert_matches::assert_matches;
     use camino_tempfile::tempdir;
     use camino_tempfile_ext::prelude::*;
 

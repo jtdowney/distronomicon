@@ -414,13 +414,13 @@ pub fn unpack_with_limits(
 #[cfg(test)]
 mod tests {
     use std::{
+        assert_matches,
         fs::{self, File},
         io::Write,
         os::unix::fs as unix_fs,
         process::Command,
     };
 
-    use assert_matches::assert_matches;
     use camino_tempfile::tempdir;
     use camino_tempfile_ext::prelude::*;
 

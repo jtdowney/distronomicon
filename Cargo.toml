@@ -17,7 +17,11 @@ futures-util = "0.3"
 jiff = { version = "0.2", features = ["serde"] }
 niffler = "3"
 regex = "1"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = [
+  "rustls-tls",
+  "json",
+  "stream",
+] }
 reqwest-middleware = "0.4"
 reqwest-retry = "0.7"
 rustix = { version = "1", features = ["fs"] }
@@ -34,7 +38,6 @@ zip = { version = "6", features = ["deflate"] }
 [dev-dependencies]
 assert_cmd = "2"
 assert_fs = "1"
-assert_matches = "1"
 bzip2 = "0.6"
 camino-tempfile-ext = "0.3"
 insta = "1"
